@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LaveSmart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f9fafb;
+        }
+        /* Estilos de Navegação */
+        .nav-item {
+            transition: all 0.2s;
+            padding: 0.75rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #4b5563;
+        }
+        .nav-item.active {
+            background-color: #4f46e5;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+        .nav-item:not(.active):hover {
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+        
+        /* Oculta os conteúdos das abas por padrão */
+        .tab-content-panel {
+            display: none;
+            padding-top: 1rem;
+        }
+
+        /* Exibe o conteúdo da aba "Cadastrar Lacre" por padrão */
+        #content-register[aria-hidden="false"] {
+            display: block;
+        }
+
+        /* Estilos de badges e cores (mantidos para consistência) */
+        .badge-green { background-color: #d1fae5; color: #065f46; } /* Pronto */
+        .badge-yellow { background-color: #fef9c3; color: #854d0e; } /* Lavando */
+        .badge-gray { background-color: #e5e7eb; color: #4b5563; } /* Pendente */
+        .badge-indigo { background-color: #e0e7ff; color: #4338ca; } /* Entregue */
+        
+    </style>
+</head>
+<body class="p-4 sm:p-8">
+    <div id="app" class="max-w-4xl mx-auto">
+        <header class="mb-8 text-center">
+            <h1 class="text-4xl font-extrabold text-indigo-600 mb-2">
+                LaveSmart
+            </h1>
+            <p class="text-gray-600">Interface de registro e rastreamento de peças.</p>
+        </header>
+
+        <div id="status-messages"></div>
+
+        <nav class="mb-8 border-b border-gray-200">
+            <div class="flex flex-wrap gap-2 sm:gap-4 -mb-px">
+                <button id="tab-register" class="nav-item active" aria-controls="content-register">
+                    <i data-lucide="save" class="w-5 h-5 mr-1"></i> Cadastrar Lacre
+                </button>
+                <button id="tab-history" class="nav-item" aria-controls="content-history">
+                    <i data-lucide="search" class="w-5 h-5 mr-1"></i> Buscar Número do Lacre
+                </button>
+            </div>
+        </nav>
+
+        <main id="tab-content" class="max-w-4xl mx-auto">
+            
+            <div id="content-register" class="tab-content-panel" aria-hidden="false">
+                 <div class="space-y-6">
+                    <h2 class="text-2xl font-semibold text-gray-800 flex items-center">
+                        <i data-lucide="save" class="w-6 h-6 mr-2 text-indigo-500"></i> Cadastrar Nova Peça/Lacre
+                    </h2>
+                    <form class="p-6 bg-white rounded-xl shadow-lg border border-gray-100 space-y-4">
+                        <p class="text-sm text-gray-500 border-b pb-3">
+                            Preencha os dados da peça para gerar o rastreamento.
+                        </p>
+                        
+                        <div class="space-y-1">
+                            <label for="register-seal-input" class="block text-sm font-medium text-gray-700">1. Número do Novo Lacre <span class="text-red-500">*</span></label>
+                            <input 
+                                id="register-seal-input" 
+                                type="text" 
+                                placeholder="Ex: 99887 (Número único de identificação)" 
+                                required 
+                                class="w-full border border-gray-300 rounded-xl p-3 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150"
+                            />
+                        </div>
+                        <div class="space-y-1">
+                            <label for="register-desc-input" class="block text-sm font-medium text-gray-700 pt-2">2. Descrição da Peça <span class="text-red-500">*</span></label>
+                            <input 
+                                id="register-desc-input" 
+                                type="text" 
+                                placeholder="Ex: Terno cinza, novo, sem manchas" 
+                                required 
+                                class="w-full border border-gray-300 rounded-xl p-3 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150"
+                            />
+                        </div>
+                        
+                        <button
+                            type="submit"
+                            id="register-seal-btn"
+                            class="mt-4 w-full flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-xl shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out"
+                        >
+                            <i data-lucide="save" class="w-5 h-5 mr-2"></i> Confirmar Cadastro do Lacre
+                        </button>
+                        <p class="text-xs text-gray-400 text-center pt-2">
+                            *O envio do formulário nesta versão estática não salva dados.
+                        </p>
+                    </form>
+                </div>
+            </div>
+
+            <div id="content-history" class="tab-content-panel" aria-hidden="true">
+                <div class="space-y-6">
+                    <h2 class="text-2xl font-semibold text-gray-800 flex items-center">
+                        <i data-lucide="search" class="w-6 h-6 mr-2 text-indigo-500"></i> Buscar Peça por Número do Lacre
+                    </h2>
+                    <div class="p-6 bg-white rounded-xl shadow-lg border border-gray-100">
+                        <label for="seal-input" class="block text-sm font-medium text-gray-700 mb-2">
+                            Digite o Número do Lacre para ver o Histórico e Atualizar Status/Lavagem
+                        </label>
+                        <div class="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-4">
+                            <input
+                                id="seal-input"
+                                type="text"
+                                placeholder="Tente 11111, 22222, 33333 ou 44444"
+                                value=""
+                                class="w-full border border-gray-300 rounded-xl p-3 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150"
+                            />
+                            <button
+                                id="search-seal-btn"
+                                class="w-full md:w-auto flex items-center justify-center px-6 py-3 border border-transparent text-sm font-medium rounded-xl shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out"
+                            >
+                                <i data-lucide="search" class="w-5 h-5 mr-2"></i> Buscar Lacre
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="seal-details-area" class="mt-6">
+                        <div class="text-center py-6 text-gray-500 font-medium">
+                            <i data-lucide="info" class="w-5 h-5 mr-1 inline-block"></i>
+                            Digite um número para simular a busca. Tente 33333 para ver um lacre pronto.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        </main>
+    </div>
+
+    <script>
+        // Mapeamento de Status para Classes e Textos
+        const STATUS_MAP = {
+            'Pendente': { class: 'badge-gray', text: 'Pendente' },
+            'Lavando': { class: 'badge-yellow', text: 'Lavando' },
+            'Pronto': { class: 'badge-green', text: 'Pronto para retirada' },
+            'Entregue': { class: 'badge-indigo', text: 'Entregue' }
+        };
+
+        // Cache simples para simular o armazenamento dos dados (Tipo de Lavagem)
+        const sealDataCache = {};
+
+        // Função para gerar o HTML do dropdown de status
+        const getStatusDropdown = (currentStatus) => {
+            let options = '';
+            for (const status in STATUS_MAP) {
+                const selected = status === currentStatus ? 'selected' : '';
+                options += `<option value="${status}" ${selected}>${STATUS_MAP[status].text}</option>`;
+            }
+
+            return `
+                <select id="editable-status-select" class="block w-full rounded-xl border border-gray-300 bg-white py-2 px-3 text-sm focus:ring-indigo-500 focus:border-indigo-500 transition duration-150">
+                    ${options}
+                </select>
+            `;
+        };
+        
+        // Simulação de atualização de status e tipo de lavagem
+        const simulateUpdate = (sealId) => {
+            const selectElement = document.getElementById('editable-status-select');
+            const washTypeInput = document.getElementById('editable-wash-type-input');
+            
+            const newStatus = selectElement.value;
+            const newWashType = washTypeInput.value.trim();
+
+            // 1. Atualiza o cache (simulação de salvamento no backend)
+            sealDataCache[sealId] = sealDataCache[sealId] || {};
+            sealDataCache[sealId].status = newStatus;
+            sealDataCache[sealId].washType = newWashType;
+            
+            // 2. Feedback visual
+            StatusMessage(`Lacre ${sealId} atualizado! Status: ${STATUS_MAP[newStatus].text}, Lavagem: "${newWashType}".`, 'success');
+            
+            // 3. Recarrega os detalhes com os novos dados
+            document.getElementById('seal-details-area').innerHTML = getSealDetailsHTML(sealId, newStatus, newWashType);
+            lucide.createIcons();
+            
+            // 4. Reatacha o listener do botão após a recarga
+            attachUpdateListener(sealId);
+        };
+        
+        // Função para anexar o listener ao botão de atualização
+        const attachUpdateListener = (sealId) => {
+            const updateBtn = document.getElementById('update-all-btn');
+            if (updateBtn) {
+                updateBtn.addEventListener('click', () => {
+                    simulateUpdate(sealId);
+                });
+            }
+        };
+
+        // Função para gerar o HTML do resultado (INCLUINDO A EDIÇÃO DE LAVAGEM)
+        const getSealDetailsHTML = (sealId, status, initialWashType) => {
+            
+            // Tenta pegar o washType do cache, se não tiver, usa o inicial (da simulação de busca)
+            const currentWashType = sealDataCache[sealId]?.washType || initialWashType;
+            const currentStatus = sealDataCache[sealId]?.status || status;
+
+            // Dados estáticos de exemplo baseados no ID
+            let description = 'Peça de roupa padrão, não especificada.';
+            let price = '35,00';
+            let observations = 'Recebido na lavanderia.';
+            let deliveryDate = 'Previsão: 20/10/2025';
+
+            switch (sealId) { 
+                case '11111':
+                    description = 'Camisa social branca, com botão solto.';
+                    price = '30,00';
+                    observations += ' Aguardando início da lavagem.';
+                    break;
+                case '22222':
+                    description = 'Calça jeans escura, com mancha na barra.';
+                    price = '45,50';
+                    observations += ' Em ciclo de lavagem especial.';
+                    deliveryDate = 'Previsão: 18/10/2025';
+                    break;
+                case '33333':
+                    description = 'Vestido de festa vermelho, delicado.';
+                    price = '95,00';
+                    observations = 'Limpeza finalizada e embalada. Aguardando retirada.';
+                    deliveryDate = '16/10/2025';
+                    break;
+                case '44444':
+                    description = 'Terno cinza, completo.';
+                    price = '120,00';
+                    observations = 'Retirado pelo cliente (João Silva) em 14/10/2025.';
+                    deliveryDate = '14/10/2025';
+                    break;
+                default: // Garante preço padrão para novos IDs de 5 dígitos
+                    price = '40,00';
+            }
+
+
+            return `
+                <div class="bg-white p-6 rounded-xl shadow-lg border border-indigo-100 mt-6 space-y-4">
+                    <div class="border-b pb-2 mb-4">
+                        <h3 class="text-xl font-bold text-indigo-700">Detalhes do Lacre: ${sealId}</h3>
+                    </div>
+                    
+                    <div class="p-4 bg-indigo-50 rounded-lg space-y-4">
+                        <h4 class="text-lg font-semibold text-indigo-800">Atualizar Informações da Peça</h4>
+                        
+                        <div class="space-y-1">
+                            <label class="block text-sm font-medium text-gray-700">Status Atual da Lavagem:</label>
+                            ${getStatusDropdown(currentStatus)}
+                        </div>
+
+                        <div class="space-y-1">
+                            <label class="block text-sm font-medium text-gray-700">Tipo de Lavagem:</label>
+                            <input
+                                id="editable-wash-type-input"
+                                type="text"
+                                value="${currentWashType}"
+                                placeholder="Ex: Lavagem a Seco Delicada"
+                                class="block w-full rounded-xl border border-gray-300 bg-white py-2 px-3 text-sm focus:ring-indigo-500 focus:border-indigo-500 transition duration-150"
+                            />
+                        </div>
+
+                        <button
+                            id="update-all-btn"
+                            data-seal-id="${sealId}"
+                            class="w-full flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-xl shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-150 ease-in-out"
+                        >
+                            <i data-lucide="save" class="w-4 h-4 mr-2"></i> Salvar Alterações
+                        </button>
+                    </div>
+                    
+                    <hr class="border-gray-100"/>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="md:col-span-1">
+                            <img
+                                src="https://placehold.co/100x100/A0B3F7/FFFFFF?text=${currentStatus}"
+                                alt="${description}"
+                                class="w-full h-auto object-cover rounded-lg shadow-md"
+                            />
+                            <p class="text-sm font-semibold mt-2 text-center text-gray-700">${description}</p>
+                        </div>
+                        <div class="md:col-span-2 space-y-2 text-sm">
+                            <p><span class="font-medium text-gray-600">Tipo de Lavagem:</span> ${currentWashType}</p>
+                            <p><span class="font-medium text-gray-600">Valor Cobrado:</span> R$ ${price}</p>
+                            <p class="text-indigo-600"><span class='font-medium'>Data de Registro:</span> 15/10/2025 às 10:00:00</p>
+                            <p class="text-gray-600"><span class='font-medium'>Data/Previsão de Entrega:</span> ${deliveryDate}</p>
+                            <p class="break-words"><span class="font-medium text-gray-600">Observações:</span> ${observations}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        };
+        
+        // Função para exibir mensagens de status (mantida)
+        const StatusMessage = (message, type) => {
+            const domMessages = document.getElementById('status-messages');
+            const classType = type === 'error' ? 'bg-red-100 text-red-700 border-red-300' : 'bg-green-100 text-green-700 border-green-300';
+            domMessages.innerHTML = `
+                <div class="p-3 rounded-xl shadow-md ${classType} border mb-4 transition-all duration-300">
+                    ${message}
+                </div>
+            `;
+            setTimeout(() => domMessages.innerHTML = '', 4000);
+        };
+        
+        // Função de busca SIMULADA
+        const handleSearch = () => {
+            const sealInput = document.getElementById('seal-input');
+            const detailsArea = document.getElementById('seal-details-area');
+            const sealId = sealInput.value.trim();
+
+            if (!sealId || sealId.length < 5) {
+                StatusMessage("Por favor, digite um número de lacre válido (ex: 11111) para buscar.", 'error');
+                detailsArea.innerHTML = '';
+                return;
+            }
+
+            let status = null;
+            let initialWashType = 'Lavagem Padrão';
+            
+            // Simulação de diferentes status e tipos de lavagem iniciais
+            switch (sealId) {
+                case '11111': 
+                    status = 'Pendente';
+                    initialWashType = 'Lavagem Normal';
+                    break;
+                case '22222': 
+                    status = 'Lavando';
+                    initialWashType = 'Lavagem Delicada';
+                    break;
+                case '33333': 
+                    status = 'Pronto';
+                    initialWashType = 'Lavagem a Seco Especial';
+                    break;
+                case '44444': 
+                    status = 'Entregue';
+                    initialWashType = 'Lavagem a Seco';
+                    break;
+                default:
+                    if (sealId.length === 5) {
+                        status = 'Lavando';
+                        initialWashType = 'Lavagem Padrão';
+                    }
+            }
+
+            if (status) {
+                // Se não houver cache, armazena o tipo de lavagem inicial
+                if (!sealDataCache[sealId]) {
+                    sealDataCache[sealId] = { status: status, washType: initialWashType };
+                }
+                
+                // Pega os dados mais recentes (pode ser do cache ou inicial)
+                const currentStatus = sealDataCache[sealId].status;
+                const currentWashType = sealDataCache[sealId].washType;
+
+                detailsArea.innerHTML = getSealDetailsHTML(sealId, currentStatus, currentWashType);
+                StatusMessage(`Lacre ID ${sealId} encontrado! Status: ${STATUS_MAP[currentStatus].text}.`, 'success');
+
+                // Anexa o listener para o novo botão de atualização
+                attachUpdateListener(sealId);
+                
+            } else {
+                detailsArea.innerHTML = `
+                    <div class="text-center py-6 text-gray-500 font-medium">
+                        <i data-lucide="alert-triangle" class="w-5 h-5 mr-1 inline-block text-red-500"></i>
+                        Lacre ${sealId} não encontrado. Verifique o número digitado.
+                    </div>
+                `;
+                StatusMessage(`Lacre ID ${sealId} não encontrado.`, 'error');
+            }
+            lucide.createIcons();
+        };
+
+
+        window.onload = function() {
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+            
+            // --- Lógica de Troca de Aba (mantida) ---
+            const historyTab = document.getElementById('tab-history');
+            const registerTab = document.getElementById('tab-register');
+            const historyContent = document.getElementById('content-history');
+            const registerContent = document.getElementById('content-register');
+
+            // Troca de Register para History
+            historyTab.onclick = () => {
+                historyTab.classList.add('active');
+                registerTab.classList.remove('active');
+                historyContent.setAttribute('aria-hidden', 'false');
+                registerContent.setAttribute('aria-hidden', 'true');
+                historyContent.style.display = 'block';
+                registerContent.style.display = 'none';
+                lucide.createIcons();
+            };
+            
+            // Troca de History para Register
+            registerTab.onclick = () => {
+                registerTab.classList.add('active');
+                historyTab.classList.remove('active');
+                registerContent.setAttribute('aria-hidden', 'false');
+                historyContent.setAttribute('aria-hidden', 'true');
+                registerContent.style.display = 'block';
+                historyContent.style.display = 'none';
+                lucide.createIcons();
+            };
+            
+            // --- Lógica de Busca (funcional) ---
+            const searchBtn = document.getElementById('search-seal-btn');
+            const sealInput = document.getElementById('seal-input');
+            
+            if (searchBtn && sealInput) {
+                // Ao clicar no botão
+                searchBtn.addEventListener('click', handleSearch);
+                
+                // Ao pressionar Enter no campo de texto
+                sealInput.addEventListener('keypress', function (e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault(); // Impede o envio de formulário padrão (se houver)
+                        handleSearch();
+                    }
+                });
+            }
+        };
+    </script>
+</body>
+</html>

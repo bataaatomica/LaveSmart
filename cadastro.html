@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- O título será dinâmico, iniciado como Login -->
+    <title>Painel de Login</title> 
+    <!-- Carregamento do Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configuração do Google Font Inter -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<!-- 
+    A classe 'min-h-screen' garante que o corpo ocupe 100% da altura da viewport.
+    'flex items-center justify-center' centraliza o conteúdo principal (os cards) vertical e horizontalmente.
+-->
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <!-- 
+        CARD DE LOGIN (Visível por padrão)
+        Aplica as classes de tamanho, estilo e centralização.
+    -->
+    <div id="loginView" class="w-full max-w-md bg-white shadow-2xl rounded-xl p-8 sm:p-10 transform transition duration-500 hover:scale-[1.02]">
+        
+        <!-- Título Login -->
+        <h1 class="text-3xl font-extrabold text-center text-indigo-600 mb-6">
+            Entrar na Sua Conta
+        </h1>
+        <p class="text-center text-gray-500 mb-8">
+            Digite seu email e senha para acessar sua conta.
+        </p>
+        
+        <!-- Formulário Login -->
+        <form id="loginForm" onsubmit="event.preventDefault(); showMessage('Login');">
+            
+            <!-- Campo Email -->
+            <div class="mb-5">
+                <label for="login-email" class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                <input type="email" id="login-email" name="email" placeholder="email@exemplo.com" required
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 shadow-sm"
+                       aria-label="Email de Login">
+            </div>
+
+            <!-- Campo Senha -->
+            <div class="mb-6">
+                <label for="login-password" class="block text-sm font-medium text-gray-700 mb-2">Senha</label>
+                <input type="password" id="login-password" name="password" placeholder="Sua senha" required
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 shadow-sm"
+                       aria-label="Senha de Login">
+            </div>
+            
+            <!-- Botão Entrar -->
+            <button type="submit"
+                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg shadow-md transition duration-200 transform hover:scale-[1.01] focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50">
+                Entrar
+            </button>
+            
+            <!-- Link de Cadastro -->
+            <div class="mt-6 text-center text-sm">
+                <p class="text-gray-500">
+                    Não tem uma conta? 
+                    <!-- CHAMA A FUNÇÃO PARA MUDAR PARA A TELA DE CADASTRO -->
+                    <a href="#" onclick="toggleView('register'); return false;" class="text-indigo-600 font-medium hover:text-indigo-800 transition duration-150">Cadastrar-se</a>
+                </p>
+            </div>
+        </form>
+
+    </div>
+    
+    <!-- 
+        CARD DE CADASTRO (Inicialmente escondido)
+        Possui as mesmas classes de estilo e tamanho que o card de login.
+    -->
+    <div id="registerView" class="hidden w-full max-w-md bg-white shadow-2xl rounded-xl p-8 sm:p-10 transform transition duration-500 hover:scale-[1.02]">
+        
+        <!-- Título Cadastro -->
+        <h1 class="text-3xl font-extrabold text-center text-indigo-600 mb-6">
+            Criar Sua Conta
+        </h1>
+        <p class="text-center text-gray-500 mb-8">
+            Preencha os campos abaixo para começar sua jornada.
+        </p>
+        
+        <!-- Formulário Cadastro -->
+        <form id="registrationForm" onsubmit="event.preventDefault(); showMessage('Cadastro');">
+            
+            <!-- Campo Nome -->
+            <div class="mb-5">
+                <label for="reg-name" class="block text-sm font-medium text-gray-700 mb-2">Nome Completo</label>
+                <input type="text" id="reg-name" name="name" placeholder="Seu nome" required
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 shadow-sm"
+                       aria-label="Nome Completo">
+            </div>
+
+            <!-- Campo Email -->
+            <div class="mb-5">
+                <label for="reg-email" class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                <input type="email" id="reg-email" name="email" placeholder="email@exemplo.com" required
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 shadow-sm"
+                       aria-label="Email de Cadastro">
+            </div>
+
+            <!-- Campo Senha -->
+            <div class="mb-6">
+                <label for="reg-password" class="block text-sm font-medium text-gray-700 mb-2">Senha</label>
+                <input type="password" id="reg-password" name="password" placeholder="Mínimo 8 caracteres" required minlength="8"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 shadow-sm"
+                       aria-label="Senha de Cadastro">
+            </div>
+            
+            <!-- Botão Cadastrar -->
+            <button type="submit"
+                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg shadow-md transition duration-200 transform hover:scale-[1.01] focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50">
+                Cadastrar
+            </button>
+            
+            <!-- Link de Login -->
+            <div class="mt-6 text-center text-sm">
+                <p class="text-gray-500">
+                    Já tem uma conta? 
+                    <!-- CHAMA A FUNÇÃO PARA MUDAR PARA A TELA DE LOGIN -->
+                    <a href="#" onclick="toggleView('login'); return false;" class="text-indigo-600 font-medium hover:text-indigo-800 transition duration-150">Entrar</a>
+                </p>
+            </div>
+        </form>
+
+    </div>
+    
+    <!-- Mensagem de Confirmação (Substitui alert()) -->
+    <div id="messageBox" class="fixed top-0 left-0 right-0 p-4 text-center bg-green-500 text-white font-semibold hidden transition-opacity duration-300 ease-in-out shadow-lg z-50">
+        <!-- O texto da mensagem será inserido via JavaScript -->
+    </div>
+
+    <script>
+        // Função para alternar entre as visualizações de Login e Cadastro
+        function toggleView(view) {
+            const loginView = document.getElementById('loginView');
+            const registerView = document.getElementById('registerView');
+            const title = document.querySelector('title');
+
+            if (view === 'register') {
+                loginView.classList.add('hidden');
+                registerView.classList.remove('hidden');
+                title.textContent = 'Painel de Cadastro';
+            } else { // view === 'login'
+                registerView.classList.add('hidden');
+                loginView.classList.remove('hidden');
+                title.textContent = 'Painel de Login';
+            }
+            // Oculta a caixa de mensagem se estiver visível
+            const messageBox = document.getElementById('messageBox');
+            messageBox.classList.add('hidden', 'opacity-0');
+            messageBox.classList.remove('opacity-100');
+        }
+
+        // Função para mostrar a mensagem de sucesso (substituindo o alert)
+        function showMessage(type) {
+            const messageBox = document.getElementById('messageBox');
+            messageBox.textContent = `${type} simulado com sucesso!`;
+            
+            messageBox.classList.remove('hidden', 'opacity-0', 'bg-red-500');
+            messageBox.classList.add('opacity-100', 'bg-green-500');
+
+            // Oculta a mensagem após 3 segundos
+            setTimeout(() => {
+                messageBox.classList.remove('opacity-100');
+                messageBox.classList.add('opacity-0');
+                
+                // Esconde completamente após a transição
+                setTimeout(() => {
+                    messageBox.classList.add('hidden');
+                }, 300); 
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,672 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lavanderia+ Rastreamento de Lacre</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons (Inline SVG replacement for React Icons) -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f9fafb;
+        }
+        .nav-item {
+            transition: all 0.2s;
+            padding: 0.75rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .nav-item.active {
+            background-color: #4f46e5; /* indigo-600 */
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+        .nav-item:not(.active):hover:not(:disabled) {
+            background-color: #f3f4f6; /* gray-100 */
+            color: #1f2937; /* gray-800 */
+        }
+        .nav-item:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .loading-spin {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8">
+    <div id="app" class="max-w-4xl mx-auto">
+        <!-- Cabeçalho -->
+        <header class="mb-8 flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl sm:text-4xl font-extrabold text-indigo-600 mb-2">
+                    Lavanderia+ (Rastreamento de Lacre)
+                </h1>
+                <p class="text-gray-600">Acompanhe o histórico e status de suas peças de roupa.</p>
+            </div>
+            <button id="logout-btn" style="display: none;" 
+                    class="flex items-center text-sm font-medium text-red-600 hover:text-red-700 p-2 rounded-full transition duration-150">
+                <i data-lucide="log-out" class="w-5 h-5 mr-1"></i> Sair
+            </button>
+        </header>
+
+        <!-- Mensagens de Status (renderizadas por JS) -->
+        <div id="status-messages"></div>
+
+        <!-- Navegação por Abas (Escondida se não logado) -->
+        <nav id="app-nav" class="mb-8 border-b border-gray-200" style="display: none;">
+            <div class="flex flex-wrap gap-2 sm:gap-4 -mb-px">
+                <button id="tab-history" class="nav-item active">
+                    <i data-lucide="search" class="w-5 h-5 mr-1"></i> Buscar Número do Lacre
+                </button>
+                <button id="tab-register" class="nav-item text-gray-600">
+                    <i data-lucide="save" class="w-5 h-5 mr-1"></i> Cadastrar Lacre
+                </button>
+            </div>
+        </nav>
+
+        <!-- Conteúdo da Aba (renderizado por JS) -->
+        <main id="tab-content" class="max-w-4xl mx-auto">
+            <div class="flex items-center justify-center h-48 text-indigo-500">
+                <i data-lucide="loader-2" class="w-8 h-8 mr-3 loading-spin"></i>
+                <span class="text-xl font-medium">Carregando serviços e autenticação...</span>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        // --- Importações do Firebase via CDN ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        // Importações adicionais para busca (where, getDocs)
+        import { getFirestore, collection, query, where, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // --- Variáveis Globais do Ambiente (Fornecidas pelo Canvas) ---
+        const MOCK_FIREBASE_CONFIG = {
+            apiKey: "SUA_API_KEY_AQUI", 
+            authDomain: "SEU_PROJETO_ID.firebaseapp.com",
+            projectId: "SEU_PROJETO_ID",
+            storageBucket: "SEU_PROJETO_ID.appspot.com",
+            messagingSenderId: "SEU_MESSAGING_ID",
+            appId: "SEU_APP_ID"
+        };
+
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : MOCK_FIREBASE_CONFIG;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null; // Token não é usado com login de email/senha
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'smart-laundry-app-local';
+        
+        // --- Estado Global ---
+        let db, auth;
+        let userId = null;
+        let isAuthReady = false;
+        let isAuthenticated = false; // Novo estado de autenticação
+        // 'history' agora representa a aba de Busca
+        let activeTab = 'history'; 
+        let currentSealData = null; // Armazena o resultado da busca
+        let isSearching = false;    // Estado de busca
+        let isRegistering = false;  // Estado de cadastro
+        
+        // --- Mapeamento de DOM ---
+        const dom = {
+            content: document.getElementById('tab-content'),
+            messages: document.getElementById('status-messages'),
+            nav: document.getElementById('app-nav'), // Novo
+            logoutBtn: document.getElementById('logout-btn'), // Novo
+            tabs: {
+                history: document.getElementById('tab-history'),
+                register: document.getElementById('tab-register'),
+            }
+        };
+        
+        // --- Funções Auxiliares de UI ---
+        const StatusMessage = (message, type) => {
+            const classType = type === 'error' ? 'bg-red-100 text-red-700 border-red-300' : 'bg-green-100 text-green-700 border-green-300';
+            dom.messages.innerHTML = `
+                <div class="p-3 rounded-xl shadow-md ${classType} border mb-4 transition-all duration-300">
+                    ${message}
+                </div>
+            `;
+            setTimeout(() => dom.messages.innerHTML = '', 5000);
+        };
+
+        const StatusBadge = (status) => {
+            let classes = '';
+            switch (status) {
+                case 'Pronto para retirada':
+                    classes = 'bg-green-100 text-green-800';
+                    break;
+                case 'Em Processamento (Secagem)':
+                case 'Retirada Solicitada':
+                case 'Recebido na Lavanderia':
+                    classes = 'bg-yellow-100 text-yellow-800';
+                    break;
+                case 'Entregue':
+                    classes = 'bg-indigo-100 text-indigo-800';
+                    break;
+                default:
+                    classes = 'bg-gray-100 text-gray-800';
+            }
+            return `<span class="px-3 py-1 text-xs font-semibold rounded-full ${classes}">${status}</span>`;
+        };
+        
+        // --- Funções de Autenticação ---
+
+        const handleLogin = async (email, password) => {
+            try {
+                if (!auth) return StatusMessage("Serviço de autenticação não pronto.", 'error');
+                await signInWithEmailAndPassword(auth, email, password);
+                // onAuthStateChanged irá atualizar o estado e a UI
+                StatusMessage("Login realizado com sucesso!", 'success');
+            } catch (error) {
+                console.error("Erro de login:", error.code, error.message);
+                let message = "Falha no login. Verifique o e-mail/senha.";
+                if (error.code === 'auth/user-not-found') message = "Usuário não encontrado. Tente cadastrar.";
+                if (error.code === 'auth/wrong-password') message = "Senha incorreta.";
+                StatusMessage(message, 'error');
+            }
+        };
+
+        const handleRegister = async (email, password) => {
+            try {
+                if (!auth) return StatusMessage("Serviço de autenticação não pronto.", 'error');
+                await createUserWithEmailAndPassword(auth, email, password);
+                // onAuthStateChanged irá atualizar o estado e a UI
+                StatusMessage("Cadastro e login realizados com sucesso! Bem-vindo(a).", 'success');
+            } catch (error) {
+                console.error("Erro de cadastro:", error.code, error.message);
+                let message = "Falha no cadastro.";
+                if (error.code === 'auth/email-already-in-use') message = "Este e-mail já está cadastrado.";
+                if (error.code === 'auth/weak-password') message = "A senha deve ter no mínimo 6 caracteres.";
+                StatusMessage(message, 'error');
+            }
+        };
+
+        const handleLogout = async () => {
+            try {
+                if (!auth) return;
+                await signOut(auth);
+                // onAuthStateChanged irá atualizar o estado e a UI
+                StatusMessage("Logout realizado com sucesso.", 'success');
+                activeTab = 'history'; // Volta para a aba padrão
+            } catch (error) {
+                console.error("Erro ao fazer logout:", error);
+                StatusMessage("Falha ao fazer logout. Tente novamente.", 'error');
+            }
+        };
+        
+        // --- Funções de Lógica de Negócio ---
+
+        const getHistoryCollectionPath = () => {
+            // Coleção pública onde todos os lacres são registrados e buscados
+            return `artifacts/${appId}/public/data/registeredSeals`;
+        };
+
+        const searchSealById = async (sealIdInput) => {
+            const cleanedSealId = sealIdInput.trim();
+
+            if (!cleanedSealId) {
+                StatusMessage("Por favor, digite o número do lacre.", 'error');
+                return;
+            }
+
+            isSearching = true;
+            currentSealData = null;
+            renderContent();
+
+            try {
+                // Query específica para o sealId
+                const q = query(
+                    collection(db, getHistoryCollectionPath()),
+                    where("sealId", "==", cleanedSealId)
+                );
+
+                const snapshot = await getDocs(q);
+
+                if (!snapshot.empty) {
+                    const docData = snapshot.docs[0].data();
+                    currentSealData = {
+                        id: snapshot.docs[0].id,
+                        ...docData,
+                        // Converte Timestamp para objeto Date
+                        timestamp: docData.registrationDate?.toDate ? docData.registrationDate.toDate() : new Date(Date.now()),
+                        // Adiciona URL de imagem de fallback se não existir
+                        imageUrl: docData.imageUrl || "https://placehold.co/100x100/A0B3F7/FFFFFF?text=Lacre",
+                        observations: docData.observations || "Nenhuma observação registrada."
+                    };
+                    StatusMessage(`Lacre ID ${cleanedSealId} encontrado! Status: ${currentSealData.status}`, 'success');
+                } else {
+                    StatusMessage(`Lacre ID ${cleanedSealId} não encontrado. Verifique o número.`, 'error');
+                }
+
+            } catch (e) {
+                console.error("Erro ao buscar lacre:", e);
+                StatusMessage("Falha ao buscar o lacre. Verifique sua conexão.", 'error');
+            } finally {
+                isSearching = false;
+                renderContent();
+            }
+        };
+
+        const registerNewSeal = async (sealId, description, washType, price) => {
+            const cleanedSealId = sealId.trim();
+            const cleanedDescription = description.trim();
+            const cleanedWashType = washType.trim() || 'Lavagem Padrão';
+            const cleanedPrice = parseFloat(price) || 0.00;
+
+            if (!cleanedSealId || !cleanedDescription || !db) {
+                StatusMessage("Por favor, preencha o ID do lacre e a descrição da peça.", 'error');
+                return;
+            }
+
+            isRegistering = true;
+            renderContent();
+
+            const registerCollectionPath = getHistoryCollectionPath();
+
+            try {
+                // 1. Verifica se o lacre já existe
+                const existingQuery = query(
+                    collection(db, registerCollectionPath),
+                    where("sealId", "==", cleanedSealId)
+                );
+                const existingSnapshot = await getDocs(existingQuery);
+
+                if (!existingSnapshot.empty) {
+                    StatusMessage(`O Lacre ID ${cleanedSealId} já está registrado.`, 'error');
+                    return;
+                }
+                
+                // 2. Registra o novo lacre
+                await addDoc(collection(db, registerCollectionPath), {
+                    sealId: cleanedSealId,
+                    itemDescription: cleanedDescription,
+                    washType: cleanedWashType,
+                    price: cleanedPrice,
+                    observations: 'Peça recebida na lavanderia.',
+                    registeredBy: userId,
+                    registrationDate: serverTimestamp(),
+                    status: 'Recebido na Lavanderia',
+                    imageUrl: "https://placehold.co/100x100/A0B3F7/FFFFFF?text=Lacre", 
+                });
+
+                StatusMessage(`Lacre ID ${cleanedSealId} registrado com sucesso!`, 'success');
+                activeTab = 'history'; // Volta para a aba de busca/histórico
+
+            } catch (e) {
+                console.error("Erro ao registrar lacre:", e);
+                StatusMessage("Falha ao registrar o novo lacre. Tente novamente.", 'error');
+            } finally {
+                isRegistering = false;
+                renderContent();
+            }
+        };
+
+
+        // --- Funções de Renderização (Templates) ---
+
+        const renderLoginScreen = () => {
+            return `
+                <div class="max-w-md mx-auto p-8 bg-white rounded-xl shadow-2xl border border-indigo-100">
+                    <h2 class="text-2xl font-bold text-center text-indigo-600 mb-6">Acesso à Lavanderia</h2>
+                    
+                    <label for="login-email" class="block text-sm font-medium text-gray-700">Usuário (E-mail)</label>
+                    <input
+                        id="login-email"
+                        type="email"
+                        placeholder="seu.usuario@empresa.com"
+                        class="w-full border border-gray-300 rounded-xl p-3 mb-4 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150"
+                    />
+
+                    <label for="login-password" class="block text-sm font-medium text-gray-700">Senha</label>
+                    <input
+                        id="login-password"
+                        type="password"
+                        placeholder="******"
+                        class="w-full border border-gray-300 rounded-xl p-3 mb-6 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150"
+                    />
+
+                    <button
+                        id="login-btn"
+                        class="w-full flex items-center justify-center px-4 py-3 border border-transparent text-base font-medium rounded-xl shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 mb-3"
+                    >
+                        <i data-lucide="log-in" class="w-5 h-5 mr-2"></i> Entrar
+                    </button>
+                    
+                    <button
+                        id="register-btn"
+                        class="w-full flex items-center justify-center px-4 py-3 border border-indigo-600 text-base font-medium rounded-xl shadow-sm text-indigo-600 bg-white hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150"
+                    >
+                        <i data-lucide="user-plus" class="w-5 h-5 mr-2"></i> Cadastrar
+                    </button>
+
+                    <p class="text-xs text-gray-500 mt-4 text-center">A senha deve ter no mínimo 6 caracteres.</p>
+                </div>
+            `;
+        };
+
+        const renderSearchTab = () => { // Função de renderização para 'Buscar Número do Lacre'
+            const disabledState = isSearching;
+
+            const sealDataHtml = currentSealData ? `
+                <div class="bg-white p-6 rounded-xl shadow-lg border border-indigo-100 mt-6 space-y-4">
+                    <div class="flex justify-between items-start border-b pb-2 mb-4">
+                         <h3 class="text-xl font-bold text-indigo-700">
+                            Detalhes do Lacre: ${currentSealData.sealId}
+                        </h3>
+                        ${StatusBadge(currentSealData.status)}
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="md:col-span-1">
+                             <img
+                                src="${currentSealData.imageUrl}"
+                                alt="${currentSealData.itemDescription}"
+                                class="w-full h-auto object-cover rounded-lg shadow-md"
+                                onerror="this.onerror=null; this.src='https://placehold.co/100x100/A0B3F7/FFFFFF?text=Lacre';"
+                            />
+                            <p class="text-sm font-semibold mt-2 text-center text-gray-700">${currentSealData.itemDescription}</p>
+                        </div>
+                        <div class="md:col-span-2 space-y-2 text-sm">
+                            <p>
+                                <span class="font-medium text-gray-600">Tipo de Lavagem:</span> ${currentSealData.washType}
+                            </p>
+                            <p>
+                                <span class="font-medium text-gray-600">Valor Cobrado:</span> R$ ${currentSealData.price.toFixed(2).replace('.', ',')}
+                            </p>
+                            <p class="text-indigo-600">
+                                <span class='font-medium'>Registrado em:</span> ${currentSealData.timestamp.toLocaleDateString('pt-BR')} às ${currentSealData.timestamp.toLocaleTimeString('pt-BR')}
+                            </p>
+                            <p class="break-words">
+                                <span class="font-medium text-gray-600">Observações:</span> ${currentSealData.observations}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            ` : '';
+
+
+            return `
+                <div class="space-y-6">
+                    <h2 class="text-2xl font-semibold text-gray-800 flex items-center">
+                        <i data-lucide="search" class="w-6 h-6 mr-2 text-indigo-500"></i> Buscar Peça por Número do Lacre
+                    </h2>
+                    <div class="p-6 bg-white rounded-xl shadow-lg border border-gray-100">
+                        <label for="seal-input" class="block text-sm font-medium text-gray-700 mb-2">
+                            Digite o Número do Lacre para ver o Histórico
+                        </label>
+                        <div class="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-4">
+                            <input
+                                id="seal-input"
+                                type="text"
+                                placeholder="Ex: 12345"
+                                class="w-full border border-gray-300 rounded-xl p-3 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150"
+                            />
+                            <button
+                                id="search-seal-btn"
+                                ${disabledState ? 'disabled' : ''}
+                                class="w-full md:w-auto flex items-center justify-center px-6 py-3 border border-transparent text-sm font-medium rounded-xl shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                ${isSearching ? `<i data-lucide="loader-2" class="w-5 h-5 mr-2 loading-spin"></i> Buscando...` : `<i data-lucide="search" class="w-5 h-5 mr-2"></i> Buscar Lacre`}
+                            </button>
+                        </div>
+                    </div>
+                    ${sealDataHtml}
+                </div>
+            `;
+        };
+
+        const renderRegisterTab = () => {
+            const disabledState = isRegistering;
+
+            return `
+                <div class="space-y-6">
+                    <h2 class="text-2xl font-semibold text-gray-800 flex items-center">
+                        <i data-lucide="save" class="w-6 h-6 mr-2 text-indigo-500"></i> Cadastrar Nova Peça/Lacre
+                    </h2>
+                    <div class="p-6 bg-white rounded-xl shadow-lg border border-gray-100 space-y-4">
+                        <p class="text-sm text-gray-500 border-b pb-3">
+                            *Esta função simula o painel de entrada da lavanderia.
+                        </p>
+
+                        <label for="register-seal-input" class="block text-sm font-medium text-gray-700">
+                            1. Número do Novo Lacre
+                        </label>
+                        <input
+                            id="register-seal-input"
+                            type="text"
+                            placeholder="Ex: 99887 (Número único de identificação)"
+                            class="w-full border border-gray-300 rounded-xl p-3 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150"
+                        />
+                        
+                        <label for="register-desc-input" class="block text-sm font-medium text-gray-700 pt-2">
+                            2. Descrição da Peça
+                        </label>
+                        <input
+                            id="register-desc-input"
+                            type="text"
+                            placeholder="Ex: Terno cinza, novo, sem manchas"
+                            class="w-full border border-gray-300 rounded-xl p-3 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150"
+                        />
+                        
+                        <label for="register-wash-input" class="block text-sm font-medium text-gray-700 pt-2">
+                            3. Tipo de Lavagem (Opcional)
+                        </label>
+                        <input
+                            id="register-wash-input"
+                            type="text"
+                            placeholder="Ex: Lavagem a Seco Delicada"
+                            class="w-full border border-gray-300 rounded-xl p-3 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150"
+                        />
+
+                        <label for="register-price-input" class="block text-sm font-medium text-gray-700 pt-2">
+                            4. Preço (R$)
+                        </label>
+                        <input
+                            id="register-price-input"
+                            type="number"
+                            step="0.01"
+                            value="0.00"
+                            class="w-full border border-gray-300 rounded-xl p-3 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150"
+                        />
+
+                        <button
+                            id="register-seal-btn"
+                            ${disabledState ? 'disabled' : ''}
+                            class="mt-4 w-full flex items-center justify-center px-6 py-3 border border-transparent text-sm font-medium rounded-xl shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            ${isRegistering ? `<i data-lucide="loader-2" class="w-5 h-5 mr-2 loading-spin"></i> Registrando...` : `<i data-lucide="save" class="w-5 h-5 mr-2"></i> Confirmar Cadastro do Lacre`}
+                        </button>
+                    </div>
+                </div>
+            `;
+        };
+        
+        // --- Função Central de Renderização e Eventos ---
+        const renderContent = () => {
+            
+            // Controle de visibilidade dos elementos principais
+            if (!isAuthenticated) {
+                dom.nav.style.display = 'none';
+                dom.logoutBtn.style.display = 'none';
+            } else {
+                dom.nav.style.display = 'block';
+                dom.logoutBtn.style.display = 'flex';
+            }
+            
+            // Desabilita/Habilita botões de aba
+            Object.values(dom.tabs).forEach(btn => btn.disabled = isRegistering || isSearching);
+
+            // Renderização condicional
+            let contentHtml = '';
+            if (!isAuthReady) {
+                contentHtml = `
+                    <div class="flex items-center justify-center h-48 text-indigo-500">
+                        <i data-lucide="loader-2" class="w-8 h-8 mr-3 loading-spin"></i>
+                        <span class="text-xl font-medium">Carregando serviços e autenticação...</span>
+                    </div>
+                `;
+            } else if (!isAuthenticated) {
+                // Tela de login se não autenticado
+                contentHtml = renderLoginScreen();
+            } else {
+                // Conteúdo do app se autenticado
+                // Atualiza o estado da navegação
+                Object.keys(dom.tabs).forEach(key => {
+                    dom.tabs[key].classList.remove('active', 'text-gray-600');
+                    dom.tabs[key].classList.add(key === activeTab ? 'active' : 'text-gray-600');
+                });
+                
+                switch (activeTab) {
+                    case 'history':
+                        contentHtml = renderSearchTab();
+                        break;
+                    case 'register':
+                        contentHtml = renderRegisterTab();
+                        break;
+                }
+            }
+            
+            dom.content.innerHTML = contentHtml;
+            lucide.createIcons(); // Recria os ícones Lucide no novo HTML
+            attachEventListeners(); // Reanexa os listeners após a atualização do DOM
+        };
+
+        const attachEventListeners = () => {
+            
+            // Eventos de Autenticação (Login Screen)
+            if (!isAuthenticated && isAuthReady) {
+                const loginBtn = document.getElementById('login-btn');
+                const registerBtn = document.getElementById('register-btn');
+                const emailInput = document.getElementById('login-email');
+                const passwordInput = document.getElementById('login-password');
+
+                if (loginBtn && registerBtn) {
+                    const executeAuth = (handler) => {
+                        const email = emailInput.value;
+                        const password = passwordInput.value;
+                        if (email && password) {
+                            handler(email, password);
+                        } else {
+                            StatusMessage("Preencha e-mail e senha.", 'error');
+                        }
+                    };
+                    
+                    loginBtn.onclick = () => executeAuth(handleLogin);
+                    registerBtn.onclick = () => executeAuth(handleRegister);
+                    passwordInput.onkeypress = (e) => {
+                        if (e.key === 'Enter') executeAuth(handleLogin);
+                    };
+                }
+            } else if (isAuthenticated) {
+                // Evento de Logout (Header)
+                dom.logoutBtn.onclick = handleLogout;
+
+                // Eventos de Busca (aba 'history' / Busca)
+                if (activeTab === 'history') {
+                    const searchBtn = document.getElementById('search-seal-btn');
+                    const sealInput = document.getElementById('seal-input');
+                    
+                    if (searchBtn && sealInput) {
+                        // Limpa o estado de resultado anterior ao focar
+                        sealInput.onfocus = () => currentSealData = null; 
+                        
+                        searchBtn.onclick = () => searchSealById(sealInput.value);
+                        sealInput.onkeypress = (e) => {
+                            if (e.key === 'Enter') searchSealById(sealInput.value);
+                        };
+                    }
+                }
+
+                // Eventos de Cadastro
+                if (activeTab === 'register') {
+                    const registerBtn = document.getElementById('register-seal-btn');
+                    const sealInput = document.getElementById('register-seal-input');
+                    const descInput = document.getElementById('register-desc-input');
+                    const washInput = document.getElementById('register-wash-input');
+                    const priceInput = document.getElementById('register-price-input');
+
+
+                    if (registerBtn && sealInput && descInput) {
+                        registerBtn.onclick = async () => {
+                            await registerNewSeal(
+                                sealInput.value, 
+                                descInput.value, 
+                                washInput.value,
+                                priceInput.value
+                            );
+                            
+                            // Se a aba mudou (cadastro bem-sucedido), limpar os campos
+                            if (activeTab === 'history') { 
+                                sealInput.value = '';
+                                descInput.value = '';
+                                washInput.value = '';
+                                priceInput.value = '0.00';
+                            }
+                        };
+                    }
+                }
+            }
+        };
+
+        // --- Inicialização do App (DOM e Firebase) ---
+        const initApp = async () => {
+            // 1. Inicializa o Firebase
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                console.log("Serviços Firebase inicializados. Aguardando status de autenticação...");
+
+                onAuthStateChanged(auth, (user) => {
+                    isAuthReady = true; // Auth services are ready
+                    if (user) {
+                        userId = user.uid;
+                        isAuthenticated = true; // User is logged in
+                        console.log("Usuário autenticado:", userId);
+                    } else {
+                        userId = null;
+                        isAuthenticated = false; // User is NOT logged in
+                        console.log("Usuário não autenticado. Exibindo tela de login.");
+                    }
+                    renderContent(); // Renderiza o conteúdo (login ou app)
+                });
+            } catch (error) {
+                console.error("Erro fatal ao inicializar Firebase:", error);
+                StatusMessage("Falha ao carregar o aplicativo. Verifique a configuração do Firebase.", 'error');
+                isAuthReady = true; 
+                renderContent();
+            }
+            
+            // 2. Adiciona Eventos de Navegação (só funcionam após login)
+            dom.tabs.history.onclick = () => { 
+                activeTab = 'history'; 
+                currentSealData = null; 
+                renderContent(); 
+            };
+            dom.tabs.register.onclick = () => { 
+                activeTab = 'register'; 
+                currentSealData = null;
+                renderContent(); 
+            };
+
+            // Renderiza o estado inicial (carregando)
+            renderContent();
+        };
+
+        window.onload = initApp;
+
+    </script>
+</body>
+</html>
