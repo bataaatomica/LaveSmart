@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, height=device-height">
+    <title>LaveSmart - Acesso</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f9fafb;
+            /* 🟢 Garante que o corpo do HTML preencha a altura mínima */
+            min-height: 100vh;
+        }
+        #appView {
+            min-height: 100vh;
+        }
+
+        /* Estilos de Navegação */
+        .nav-item {
+            transition: all 0.2s;
+            padding: 0.75rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #4b5563;
+        }
+        .nav-item.active {
+            background-color: #4f46e5;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+        .nav-item:not(.active):hover {
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+
+        /* Oculta os conteúdos das abas por padrão */
+        .tab-content-panel {
+            display: none;
+            padding-top: 1rem;
+        }
+
+        /* Exibe o conteúdo da aba "Cadastrar Lacre" por padrão DENTRO do AppView */
+        #content-register[aria-hidden="false"] {
+            display: block;
+        }
+
+        /* Estilos de badges e cores */
+        .badge-green { background-color: #d1fae5; color: #065f46; }
+        .badge-yellow { background-color: #fef9c3; color: #854d0e; }
+        .badge-gray { background-color: #e5e7eb; color: #4b5563; }
+        .badge-indigo { background-color: #e0e7ff; color: #4338ca; }
+
+        /* Estilo para a lista de lacres */
+        .seal-list-item {
+            cursor: pointer;
+            transition: background-color 0.15s;
+        }
+        .seal-list-item:hover {
+            background-color: #f3f4f6;
+        }
+
+
+        /* 🚨 ESTILOS PARA IMPRESSÃO (RECIBO LIMPO) 🚨 */
+        @media print {
+            body {
+                background-color: white !important;
+                margin: 0;
+                padding: 0;
+            }
+
+            /* Oculta elementos irrelevantes para o recibo */
+            #authView,
+            #appView > header,
+            #appView > nav,
+            #status-messages,
+            #content-register, /* Garante que a tela de cadastro não apareça */
+            #search-area,
+            #update-form-area,
+            #print-receipt-btn,
+            #print-receipt-btn-register,
+            #full-list-controls, /* Oculta o botão de listagem */
+            #seal-list-area, /* Oculta a lista na impressão */
+            hr.border-gray-100 {
+                display: none !important;
+            }
+
+            /* Exibe apenas a área de detalhes (o recibo) */
+            #appView {
+                display: block !important;
+                max-width: none !important;
+            }
+            #tab-content, #content-history, #seal-details-area, #registered-seal-details-area {
+                display: block !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            /* Estiliza o conteúdo do recibo */
+            .receipt-header {
+                display: block !important;
+                text-align: center;
+                margin-bottom: 1rem;
+                padding: 1rem;
+                border-bottom: 2px dashed #4f46e5;
+            }
+            .receipt-header h1 {
+                font-size: 1.5rem;
+                font-weight: bold;
+                color: #4f46e5;
+            }
+
+            /* Ajusta o painel de detalhes para parecer um recibo */
+            .receipt-content {
+                box-shadow: none !important;
+                border: none !important;
+                padding: 1rem !important;
+            }
+            .receipt-content .grid {
+                display: block;
+                margin-top: 0.5rem;
+            }
+            .receipt-content .md\:col-span-1 {
+                display: none; /* Oculta o quadrado colorido de status na impressão */
+            }
+            .receipt-content .md\:col-span-2 {
+                padding: 0;
+            }
+            .receipt-content .text-sm {
+                font-size: 0.8rem;
+            }
+            .receipt-content .text-xl {
+                font-size: 1.25rem;
+            }
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8">
+
+<div id="authView" class="flex items-center justify-center min-h-screen p-4">
+
+    <div id="loginView" class="w-full max-w-md bg-white shadow-2xl rounded-xl p-8 sm:p-10 transform transition duration-500 hover:scale-[1.02]">
+        <h1 class="text-3xl font-extrabold text-center text-indigo-600 mb-6">
+            Entrar na Sua Conta
+        </h1>
+        <p class="text-center text-gray-500 mb-8">
+            Digite seu **nome de usuário** e senha para acessar sua conta.
+        </p>
+
+        <form id="loginForm" onsubmit="event.preventDefault(); showApp('Login');">
+
+            <div class="mb-5">
+                <label for="login-username" class="block text-sm font-medium text-gray-700 mb-2">Nome de Usuário</label>
+                <input type="text" id="login-username" name="username" placeholder="Seu nome de usuário (Tente 'admin')" required
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 shadow-sm"
+                       aria-label="Nome de Usuário de Login">
+            </div>
+
+            <div class="mb-6">
+                <label for="login-password" class="block text-sm font-medium text-gray-700 mb-2">Senha</label>
+                <input type="password" id="login-password" name="password" placeholder="Sua senha (Tente '123456')" required
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 shadow-sm"
+                       aria-label="Senha de Login">
+            </div>
+
+            <button type="submit"
+                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg shadow-md transition duration-200 transform hover:scale-[1.01] focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50">
+                Entrar
+            </button>
+
+            <div class="mt-6 text-center text-sm">
+                <p class="text-gray-500">
+                    Não tem uma conta?
+                    <a href="#" onclick="toggleAuthView('register'); return false;" class="text-indigo-600 font-medium hover:text-indigo-800 transition duration-150">Cadastrar-se</a>
+                </p>
+            </div>
+        </form>
+
+    </div>
+
+    <div id="registerView" class="hidden w-full max-w-md bg-white shadow-2xl rounded-xl p-8 sm:p-10 transform transition duration-500 hover:scale-[1.02]">
+        <h1 class="text-3xl font-extrabold text-center text-indigo-600 mb-6">
+            Criar Sua Conta
+        </h1>
+        <p class="text-center text-gray-500 mb-8">
+            Preencha os campos abaixo para começar sua jornada.
+        </p>
+
+        <form id="registrationForm" onsubmit="event.preventDefault(); showAppForLogin('Cadastro');">
+
+            <div class="mb-5">
+                <label for="reg-name" class="block text-sm font-medium text-gray-700 mb-2">Nome Completo</label>
+                <input type="text" id="reg-name" name="name" placeholder="Seu nome" required
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 shadow-sm"
+                       aria-label="Nome Completo">
+            </div>
+
+            <div class="mb-5">
+                <label for="reg-username" class="block text-sm font-medium text-gray-700 mb-2">Nome de Usuário</label>
+                <input type="text" id="reg-username" name="username" placeholder="Crie um nome único" required
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 shadow-sm"
+                       aria-label="Nome de Usuário de Cadastro">
+            </div>
+            <div class="mb-5">
+                <label for="reg-email" class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                <input type="email" id="reg-email" name="email" placeholder="email@exemplo.com" required
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 shadow-sm"
+                       aria-label="Email de Cadastro">
+            </div>
+
+            <div class="mb-6">
+                <label for="reg-password" class="block text-sm font-medium text-gray-700 mb-2">Senha</label>
+                <input type="password" id="reg-password" name="password" placeholder="Mínimo 6 caracteres" required minlength="6"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 shadow-sm"
+                       aria-label="Senha de Cadastro">
+            </div>
+
+            <button type="submit"
+                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg shadow-md transition duration-200 transform hover:scale-[1.01] focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50">
+                Cadastrar
+            </button>
+
+            <div class="mt-6 text-center text-sm">
+                <p class="text-gray-500">
+                    Já tem uma conta?
+                    <a href="#" onclick="toggleAuthView('login'); return false;" class="text-indigo-600 font-medium hover:text-indigo-800 transition duration-150">Entrar</a>
+                </p>
+            </div>
+        </form>
+
+    </div>
+</div> <div id="messageBox" class="fixed top-0 left-0 right-0 p-4 text-center bg-green-500 text-white font-semibold hidden transition-opacity duration-300 ease-in-out shadow-lg z-50">
+</div>
+
+
+<div id="appView" style="display: none;" class="max-w-4xl mx-auto">
+    <header class="mb-8 text-center">
+        <h1 class="text-4xl font-extrabold text-indigo-600 mb-2">
+            LaveSmart
+        </h1>
+        <p class="text-gray-600">Interface de registro e rastreamento de peças.</p>
+        <button onclick="goBackToAuth()" class="text-sm text-gray-500 hover:text-indigo-600 mt-2 flex items-center justify-center mx-auto">
+            <i data-lucide="log-out" class="w-4 h-4 mr-1"></i> Sair (Voltar ao Login)
+        </button>
+    </header>
+
+    <div id="status-messages"></div>
+
+    <nav class="mb-8 border-b border-gray-200">
+        <div class="flex flex-wrap gap-2 sm:gap-4 -mb-px">
+            <button id="tab-register" class="nav-item active" aria-controls="content-register">
+                <i data-lucide="save" class="w-5 h-5 mr-1"></i> Cadastrar Lacre
+            </button>
+            <button id="tab-history" class="nav-item" aria-controls="content-history">
+                <i data-lucide="search" class="w-5 h-5 mr-1"></i> Buscar Número do Lacre
+            </button>
+        </div>
+    </nav>
+
+    <main id="tab-content" class="max-w-4xl mx-auto">
+
+        <div id="content-register" class="tab-content-panel" aria-hidden="false">
+            <div class="space-y-6">
+                <h2 class="text-2xl font-semibold text-gray-800 flex items-center">
+                    <i data-lucide="save" class="w-6 h-6 mr-2 text-indigo-500"></i> Registrar Nova Peça
+                </h2>
+
+                <form class="p-6 bg-white rounded-xl shadow-lg border border-gray-100 space-y-4" id="register-seal-form">
+                    <p class="text-sm text-gray-500 border-b pb-3">
+                        Preencha os dados da peça e defina o status inicial da lavagem.
+                    </p>
+
+                    <div class="space-y-1">
+                        <label for="register-seal-input" class="block text-sm font-medium text-gray-700">1. Número do Novo Lacre <span class="text-red-500">*</span></label>
+                        <input
+                                id="register-seal-input"
+                                type="text"
+                                placeholder="Ex: 99887 (Número único de identificação)"
+                                required
+                                class="w-full border border-gray-300 rounded-xl p-3 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150"
+                        />
+                    </div>
+                    <div class="space-y-1">
+                        <label for="register-desc-input" class="block text-sm font-medium text-gray-700 pt-2">2. Descrição da Peça <span class="text-red-500">*</span></label>
+                        <input
+                                id="register-desc-input"
+                                type="text"
+                                placeholder="Ex: Terno cinza, novo, sem manchas"
+                                required
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 shadow-sm"
+                        />
+                    </div>
+
+                    <div id="registration-update-area" class="p-4 bg-indigo-50 rounded-lg space-y-4">
+                        <h4 class="text-lg font-semibold text-indigo-800">3. Status e Processos Iniciais</h4>
+
+                        <div class="space-y-1">
+                            <label class="block text-sm font-medium text-gray-700">Status Inicial da Lavagem:</label>
+                            <div id="initial-status-dropdown-container"></div>
+                        </div>
+
+                        <div class="space-y-1">
+                            <label class="block text-sm font-medium text-gray-700">Tipos de Lavagem (Máx. 10):</label>
+
+                            <div class="border border-gray-300 rounded-xl p-3 bg-white">
+                                <label for="wash-search-input" class="block text-xs font-medium text-gray-500 mb-2">
+                                    <i data-lucide="search" class="w-4 h-4 mr-1 inline-block"></i> Pesquisar e Adicionar Processos:
+                                </label>
+
+                                <div class="relative">
+                                    <input
+                                            id="wash-search-input"
+                                            type="text"
+                                            placeholder="Ex: STONAGEM, LASER, AMACIADO..."
+                                            class="w-full pl-3 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 text-sm"
+                                            onfocus="this.value='';"
+                                            oninput="filterWashTypes(this.value, 'register')"
+                                    />
+                                    <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                        <i data-lucide="search" class="w-5 h-5 text-gray-400"></i>
+                                    </div>
+
+                                    <div id="selected-wash-tags-register" class="flex flex-wrap gap-2 mt-2 min-h-[30px] p-1 border border-dashed border-gray-200 rounded-lg">
+                                        <span class="text-xs text-gray-400">Nenhum processo selecionado.</span>
+                                    </div>
+
+                                    <div id="wash-search-results-register" class="hidden absolute z-10 w-full bg-white border border-gray-300 mt-1 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                    </div>
+                                </div>
+
+                                <input type="hidden" id="selected-wash-types-hidden-register" required value="" />
+
+                            </div>
+                        </div>
+                    </div>
+                    <button
+                            type="submit"
+                            id="register-seal-btn"
+                            class="mt-4 w-full flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-xl shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-150 ease-in-out"
+                    >
+                        <i data-lucide="save" class="w-5 h-5 mr-2"></i> Confirmar Cadastro e Iniciar Rastreio
+                    </button>
+                    <p class="text-xs text-gray-400 text-center pt-2">
+                        *O lacre será salvo de forma persistente (LocalStorage).
+                    </p>
+                </form>
+
+                <div id="registered-seal-details-area" class="hidden">
+                    <div class="border-b pb-2 mb-4 mt-6">
+                        <h3 class="text-xl font-bold text-indigo-700">Detalhes do Lacre Registrado</h3>
+                    </div>
+                    <div id="registered-receipt-content" class="bg-white p-6 rounded-xl shadow-lg border border-indigo-100 space-y-4 receipt-content">
+                    </div>
+
+                    <button
+                            id="print-receipt-btn-register"
+                            data-seal-id=""
+                            class="w-full flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-xl shadow-sm text-white bg-indigo-500 hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out mt-4"
+                    >
+                        <i data-lucide="printer" class="w-4 h-4 mr-2"></i> Imprimir (Salvar PDF)
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <div id="content-history" class="tab-content-panel" aria-hidden="true">
+            <div class="space-y-6">
+                <h2 class="text-2xl font-semibold text-gray-800 flex items-center">
+                    <i data-lucide="search" class="w-6 h-6 mr-2 text-indigo-500"></i> Buscar Peça para Atualização
+                </h2>
+
+                <div id="search-area" class="p-6 bg-white rounded-xl shadow-lg border border-gray-100">
+                    <label for="seal-input" class="block text-sm font-medium text-gray-700 mb-3">
+                        Digite o **Número do Lacre** para ver e atualizar o status:
+                    </label>
+                    <div class="flex items-stretch space-x-3">
+                        <input
+                                id="seal-input"
+                                type="text"
+                                placeholder="Tente 11111, 22222, 33333 ou o lacre cadastrado"
+                                value=""
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 shadow-sm"
+                        />
+                        <button
+                                id="search-seal-btn"
+                                class="w-auto flex items-center justify-center px-6 py-3 border border-transparent text-sm font-medium rounded-xl shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out"
+                        >
+                            <i data-lucide="search" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+
+                    <div id="full-list-controls" class="mt-4 pt-3 border-t border-gray-100">
+                        <button
+                                id="list-all-btn"
+                                onclick="renderSealList()"
+                                class="w-full flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-xl shadow-sm text-gray-700 bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 transition duration-150 ease-in-out"
+                        >
+                            <i data-lucide="list-checks" class="w-4 h-4 mr-2"></i> Listar Todos os Lacres Salvos
+                        </button>
+                    </div>
+                </div>
+
+                <div id="seal-details-area" class="mt-6">
+                    <div class="text-center py-6 text-gray-500 font-medium">
+                        <i data-lucide="info" class="w-5 h-5 mr-1 inline-block"></i>
+                        Digite um número para simular a busca. Tente 33333 para ver um lacre pronto.
+                    </div>
+                </div>
+
+                <div id="seal-list-area" class="mt-6 hidden">
+                    <h3 class="text-xl font-bold text-indigo-700 mb-4 flex items-center">
+                        <i data-lucide="archive" class="w-5 h-5 mr-2"></i> Lista Completa de Lacres Cadastrados
+                    </h3>
+                    <div id="seal-list-content" class="bg-white rounded-xl shadow-lg border border-gray-100 divide-y divide-gray-100">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script>
+    // =================================================================
+    // VARIÁVEIS, CACHE E FUNÇÕES DE PERSISTÊNCIA (localStorage)
+    // =================================================================
+
+    const STATUS_MAP = {
+        'Pendente': { class: 'badge-gray', text: 'Pendente' },
+        'Lavando': { class: 'badge-yellow', text: 'Lavando' },
+        'Pronto': { class: 'badge-green', text: 'Pronto para retirada' },
+        'Entregue': { class: 'badge-indigo', text: 'Entregue' }
+    };
+
+    const WASH_TYPES = [
+        "Selecione o Tipo...", "STONAGEM", "SKY MEDIO", "SKY CLARO", "ALVEJAMENTO", "AMACIADO",
+        "AMARRACOES", "MARMORIZADO", "ALVEJAMENTO AMERICANO", "INTER NT", "SKY OXY",
+        "SKY PERMA", "CLAREAMENTO CLORO", "CLAREAMENTO PERMAGANATO", "SOBRETINTO",
+        "USED", "CORTE BARRA", "LASER", "NAVALHADO", "CORROSAO", "RESINA",
+        "RESPINGO", "FOIL", "GLITTER", "SCRUSH", "VIVO", "PUIDO", "REBOLO",
+        "NUTRALIZAR", "PINOS", "TINGIMENTO", "BIGODE CURTO",
+        "BIGODE LONGO", "BIGODE FRENTE/COSTA", "BIGODE COM ESCRITA", "BIGODE C DEVORE",
+        "ESTAMPA LASER", "ESCRITA LASER", "DEVORE LASER", "BIOPOLIMENTO",
+        "DESENHO LASER", "SKY PASTA", "LIXADO", "PRENSADO", "LIMPEZA",
+        "CATIONIZADO"
+    ];
+
+    // Variável global para armazenar os tipos de lavagem atualmente selecionados
+    let activeSelectedWashTypes = [];
+
+    //  FUNÇÕES DE PERSISTÊNCIA (localStorage)
+
+    const loadCache = (key, defaultData) => {
+        const stored = localStorage.getItem(key);
+        try {
+            return stored ? JSON.parse(stored) : defaultData;
+        } catch (e) {
+            console.error(`Erro ao carregar cache ${key}:`, e);
+            return defaultData;
+        }
+    };
+
+    const saveCache = (key, data) => {
+        localStorage.setItem(key, JSON.stringify(data));
+    };
+
+    // Cria o cache de usuários e lacres, lendo do localStorage
+    let sealDataCache = loadCache('lavesmart_seals', {});
+    // NOTA: O nome de usuário no cache é armazenado em minúsculas para consistência
+    let userCache = loadCache('lavesmart_users', {'admin': '123456'}); // Usuário padrão
+
+    // =================================================================
+    // FUNÇÕES DE ALERTA E STATUS
+    // =================================================================
+
+    function showMessage(message, type = 'success') {
+        const messageBox = document.getElementById('messageBox');
+        const bgColor = type === 'info' ? 'bg-indigo-500' : type === 'error' ? 'bg-red-500' : 'bg-green-500';
+
+        messageBox.textContent = message;
+        messageBox.className = `fixed top-0 left-0 right-0 p-4 text-center text-white font-semibold transition-opacity duration-300 ease-in-out shadow-lg z-50 ${bgColor}`;
+        messageBox.classList.remove('hidden', 'opacity-0');
+        messageBox.classList.add('opacity-100');
+
+        setTimeout(() => {
+            messageBox.classList.remove('opacity-100');
+            messageBox.classList.add('opacity-0');
+            setTimeout(() => {
+                messageBox.classList.add('hidden');
+            }, 300);
+        }, 3000);
+    }
+
+    function StatusMessage(message, type = 'info') {
+        const statusDiv = document.getElementById('status-messages');
+        const color = type === 'success' ? 'bg-green-100 border-green-400 text-green-700' :
+                        type === 'error' ? 'bg-red-100 border-red-400 text-red-700' :
+                        'bg-indigo-100 border-indigo-400 text-indigo-700';
+
+        statusDiv.innerHTML = `
+            <div class="p-4 mb-4 border-l-4 ${color} rounded-lg" role="alert">
+                <p class="font-bold">${type.toUpperCase()}</p>
+                <p class="text-sm">${message}</p>
+            </div>
+        `;
+        setTimeout(() => {
+            statusDiv.innerHTML = '';
+        }, 4000);
+    }
+    // =================================================================
+    // LÓGICA DE AUTENTICAÇÃO E NAVEGAÇÃO PRINCIPAL
+    // =================================================================
+
+    function toggleAuthView(view) {
+        const authView = document.getElementById('authView');
+        const loginView = document.getElementById('loginView');
+        const registerView = document.getElementById('registerView');
+        const title = document.querySelector('title');
+
+        if (view === 'register') {
+            loginView.classList.add('hidden');
+            //  CORREÇÃO: Apenas remove a classe hidden
+            registerView.classList.remove('hidden');
+            title.textContent = 'Painel de Cadastro';
+        } else {
+            //  CORREÇÃO: Apenas adiciona a classe hidden
+            registerView.classList.add('hidden');
+            loginView.classList.remove('hidden');
+            title.textContent = 'Painel de Login';
+        }
+        const messageBox = document.getElementById('messageBox');
+        messageBox.classList.add('hidden', 'opacity-0');
+        messageBox.classList.remove('opacity-100');
+    }
+
+    /**
+     * Lida com o Login, usando o cache de usuários (persistente) para validação.
+     */
+    function showApp(actionType) {
+        //  Normaliza o nome de usuário (remove espaços e converte para minúsculas)
+        const usernameInput = document.getElementById('login-username').value.trim().toLowerCase();
+        const originalUsername = document.getElementById('login-username').value;
+        const passwordInput = document.getElementById('login-password').value;
+
+        //  Procura as credenciais no cache persistente (pelo nome normalizado)
+        if (userCache.hasOwnProperty(usernameInput)) {
+            if (userCache[usernameInput] === passwordInput) {
+                // SUCESSO: CREDENCIAIS CORRETAS
+                const authView = document.getElementById('authView');
+                const appView = document.getElementById('appView');
+                const title = document.querySelector('title');
+
+                // 💡 CORREÇÃO: Garante o display imediato com style
+                authView.style.display = 'none';
+                appView.style.display = 'block';
+
+                authView.classList.add('hidden');
+                appView.classList.remove('hidden');
+                title.textContent = 'LaveSmart';
+
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+                // Usa o nome de usuário original para a mensagem
+                showMessage(`Login efetuado com sucesso! Bem-vindo(a) ${originalUsername}.`, 'success');
+
+                renderInitialRegistrationOptions();
+                return;
+            }
+        }
+
+        // ERRO
+        showMessage('Nome de usuário ou senha incorretos. Tente novamente.', 'error');
+        document.getElementById('login-password').value = '';
+    }
+
+    /**
+     * Lida com o Cadastro. Salva o novo usuário no cache persistente e redireciona para o Login.
+     */
+    function showAppForLogin(actionType) {
+         // Pega os valores dos campos de cadastro
+         const username = document.getElementById('reg-username').value.trim();
+         const password = document.getElementById('reg-password').value;
+
+         // 🟢 1. Salva o usuário no cache com a chave em MINÚSCULAS para facilitar o login
+         userCache[username.toLowerCase()] = password;
+         saveCache('lavesmart_users', userCache);
+
+         // Opcional: Limpa os campos do formulário de cadastro
+         document.getElementById('registrationForm').reset();
+
+         // 2. Redireciona para o Login
+         toggleAuthView('login'); // Usa a função de navegação para garantir a troca
+         document.querySelector('title').textContent = 'Painel de Login';
+
+         showMessage(`Cadastro concluído com sucesso! Tente entrar com o usuário "${username}".`, 'info');
+    }
+
+    function goBackToAuth() {
+        const authView = document.getElementById('authView');
+        const appView = document.getElementById('appView');
+        const title = document.querySelector('title');
+
+        // 💡 CORREÇÃO: Garante o display imediato com style
+        appView.style.display = 'none';
+        authView.style.display = 'flex'; // 'authView' é um container flex
+
+        appView.classList.add('hidden');
+        authView.classList.remove('hidden');
+        toggleAuthView('login');
+        title.textContent = 'Painel de Login';
+        showMessage('Sessão encerrada com sucesso.', 'info');
+    }
+
+    // =================================================================
+    // LÓGICA DE CADASTRO DE LACRE
+    // =================================================================
+
+    const handleRegister = () => {
+        const sealInput = document.getElementById('register-seal-input');
+        const descInput = document.getElementById('register-desc-input');
+        const statusSelect = document.getElementById('reg-status-select');
+
+        const newSealId = sealInput.value.trim();
+        const newDescription = descInput.value.trim();
+        const newStatus = statusSelect.value;
+        // Pega os tipos de lavagem da lista ATIVA do REGISTRO
+        const newWashTypes = activeSelectedWashTypes;
+
+        if (!newSealId || !newDescription) {
+            StatusMessage("Por favor, preencha o número do lacre e a descrição da peça.", 'error');
+            return;
+        }
+        if (newWashTypes.length === 0) {
+             StatusMessage(`É necessário selecionar pelo menos um Tipo de Lavagem.`, 'error');
+             return;
+        }
+
+        if (sealDataCache[newSealId]) {
+            StatusMessage(`O Lacre ID ${newSealId} já está cadastrado. Tente outro número.`, 'error');
+            return;
+        }
+
+        sealDataCache[newSealId] = {
+            status: newStatus,
+            washType: newWashTypes,
+            description: newDescription
+        };
+
+        saveCache('lavesmart_seals', sealDataCache);
+
+        sealInput.value = '';
+        descInput.value = '';
+
+        // Limpa a barra de busca do cadastro
+        document.getElementById('wash-search-input').value = '';
+
+        // Re-renderiza o estado inicial do multi-select
+        renderInitialRegistrationOptions();
+
+        const detailsArea = document.getElementById('registered-receipt-content');
+        detailsArea.innerHTML = getSealDetailsHTMLForRegister(newSealId);
+
+        document.getElementById('registered-seal-details-area').classList.remove('hidden');
+        document.getElementById('print-receipt-btn-register').setAttribute('data-seal-id', newSealId);
+
+
+        StatusMessage(`Lacre ID ${newSealId} registrado com sucesso! (Salvo permanentemente).`, 'success');
+        lucide.createIcons();
+    };
+
+
+    // =================================================================
+    // LÓGICA DE BUSCA E ATUALIZAÇÃO (PERSISTÊNCIA)
+    // =================================================================
+
+    const handleSearch = () => {
+        const sealInput = document.getElementById('seal-input');
+        const detailsArea = document.getElementById('seal-details-area');
+        document.getElementById('seal-list-area').classList.add('hidden');
+
+        const sealId = sealInput.value.trim();
+
+        if (!sealId || sealId.length < 5) {
+            StatusMessage("Por favor, digite um número de lacre válido (ex: 11111) para buscar.", 'error');
+            detailsArea.innerHTML = '';
+            return;
+        }
+
+        let status = null;
+        let initialWashType = [];
+
+        if (sealDataCache[sealId]) {
+             status = sealDataCache[sealId].status;
+             initialWashType = sealDataCache[sealId].washType;
+        } else {
+            // Se não encontrou, usa dados SIMULADOS, os armazena e continua a busca
+            switch (sealId) {
+                case '11111':
+                    status = 'Pendente';
+                    initialWashType = ['STONAGEM', 'AMACIADO'];
+                    break;
+                case '22222':
+                    status = 'Lavando';
+                    initialWashType = ['BIGODE CURTO'];
+                    break;
+                case '33333':
+                    status = 'Pronto';
+                    initialWashType = ['LASER', 'ALVEJAMENTO BRANCO', 'RESINA'];
+                    break;
+                case '44444':
+                    status = 'Entregue';
+                    initialWashType = ['TINGIMENTO'];
+                    break;
+                default:
+                    StatusMessage(`Lacre ID ${sealId} não encontrado. Verifique o número digitado.`, 'error');
+                    detailsArea.innerHTML = '';
+                    return;
+            }
+            sealDataCache[sealId] = { status: status, washType: initialWashType, description: `Peça simulada (ID ${sealId})` };
+            saveCache('lavesmart_seals', sealDataCache);
+        }
+
+
+        if (status) {
+            detailsArea.innerHTML = getSealDetailsHTML(sealId, status, initialWashType);
+            StatusMessage(`Lacre ID ${sealId} encontrado! Status: ${STATUS_MAP[status].text}.`, 'success');
+
+            //  Inicia o Multi-Select com os dados do lacre buscado
+            activeSelectedWashTypes = [...(sealDataCache[sealId].washType || [])];
+            updateSelectedTags('update');
+
+            attachUpdateListener(sealId);
+        }
+        lucide.createIcons();
+    };
+
+    const simulateUpdate = (sealId) => {
+        // Pega o status do dropdown de edição
+        const selectStatus = document.getElementById('editable-status-select');
+        // Pega a lista ATUAL de lavagens do multi-select
+        const newWashTypes = activeSelectedWashTypes;
+
+        if (newWashTypes.length === 0) {
+             StatusMessage(`É necessário selecionar pelo menos um Tipo de Lavagem.`, 'error');
+             return;
+        }
+
+        const newStatus = selectStatus.value;
+        const currentDescription = sealDataCache[sealId]?.description || '';
+
+        sealDataCache[sealId].status = newStatus;
+        sealDataCache[sealId].washType = newWashTypes;
+        sealDataCache[sealId].description = currentDescription;
+
+        saveCache('lavesmart_seals', sealDataCache);
+
+        StatusMessage(`Lacre ${sealId} atualizado com sucesso! (Salvo permanentemente). Status: ${STATUS_MAP[newStatus].text}.`, 'success');
+
+        document.getElementById('seal-details-area').innerHTML = getSealDetailsHTML(sealId, newStatus, newWashTypes);
+        lucide.createIcons();
+
+        // Re-inicia o Multi-Select após a atualização
+        activeSelectedWashTypes = [...newWashTypes];
+        updateSelectedTags('update');
+
+        attachUpdateListener(sealId);
+    };
+
+
+    //  FUNÇÃO NOVO: RENDERIZA A LISTA COMPLETA 
+    const renderSealList = () => {
+        const listArea = document.getElementById('seal-list-area');
+        const listContent = document.getElementById('seal-list-content');
+        const detailsArea = document.getElementById('seal-details-area');
+
+        detailsArea.innerHTML = ''; // Esconde os detalhes do item individual
+
+        const sealIds = Object.keys(sealDataCache).sort();
+
+        if (sealIds.length === 0) {
+            listContent.innerHTML = `
+                <div class="p-6 text-center text-gray-500">
+                    <i data-lucide="folder-x" class="w-8 h-8 mx-auto mb-2 text-gray-400"></i>
+                    <p class="font-medium">Nenhum lacre cadastrado na memória persistente.</p>
+                    <p class="text-sm">Cadastre um lacre na aba ao lado.</p>
+                </div>
+            `;
+            listArea.classList.remove('hidden');
+            lucide.createIcons();
+            StatusMessage('A lista está vazia. Cadastre novos lacres para vê-los aqui.', 'info');
+            return;
+        }
+
+        let html = '';
+        sealIds.forEach(sealId => {
+            const data = sealDataCache[sealId];
+            const statusInfo = STATUS_MAP[data.status] || STATUS_MAP['Pendente'];
+            const description = data.description || 'N/A';
+
+            html += `
+                <div
+                    class="seal-list-item p-4 flex justify-between items-center"
+                    onclick="document.getElementById('seal-input').value='${sealId}'; handleSearch();"
+                >
+                    <div>
+                        <p class="text-lg font-bold text-indigo-600">Lacre ID: #${sealId}</p>
+                        <p class="text-sm text-gray-600 truncate">${description.substring(0, 50)}${description.length > 50 ? '...' : ''}</p>
+                    </div>
+                    <span class="inline-block px-3 py-1 text-xs font-semibold rounded-full ${statusInfo.class}">
+                        ${statusInfo.text}
+                    </span>
+                </div>
+            `;
+        });
+
+        listContent.innerHTML = html;
+        listArea.classList.remove('hidden');
+        lucide.createIcons();
+        StatusMessage(`Foram encontrados ${sealIds.length} lacres salvos permanentemente.`, 'info');
+    };
+
+
+    //  FUNÇÃO CORRIGIDA/MODIFICADA: getSealDetailsHTML 
+    const getSealDetailsHTML = (sealId, status, initialWashType) => {
+
+        const currentWashTypes = sealDataCache[sealId]?.washType || (Array.isArray(initialWashType) ? initialWashType : [initialWashType]);
+        const currentStatus = sealDataCache[sealId]?.status || status;
+        const currentData = sealDataCache[sealId];
+
+        // CORREÇÃO: Pega a descrição salva ou uma descrição simulada/padrão.
+        let description = currentData?.description || 'Peça de roupa padrão, não especificada.';
+        let observations = 'Recebido na lavanderia.';
+        let deliveryDate = 'Previsão: 20/10/2025';
+
+        // Lógica de simulação de descrição e observações para os IDs de teste
+        if (!currentData || !currentData.description || currentData.description.startsWith('Peça simulada')) {
+             switch (sealId) {
+                case '11111':
+                    description = 'Camisa social branca, com botão solto.';
+                    observations += ' Aguardando início da lavagem.';
+                    break;
+                case '22222':
+                    description = 'Calça jeans escura, com mancha na barra.';
+                    observations += ' Em ciclo de lavagem especial.';
+                    deliveryDate = 'Previsão: 18/10/2025';
+                    break;
+                case '33333':
+                    description = 'Vestido de festa vermelho, delicado.';
+                    observations = 'Limpeza finalizada e embalada. Aguardando retirada.';
+                    deliveryDate = '16/10/2025';
+                    break;
+                case '44444':
+                    description = 'Terno cinza, completo.';
+                    observations = 'Retirado pelo cliente (João Silva) em 14/10/2025.';
+                    deliveryDate = '14/10/2025';
+                    break;
+                default:
+                    observations = 'Dados gerados pela simulação de persistência.';
+                    description = currentData?.description || `Lacre ID ${sealId} (Recém-salvo)`;
+            }
+        }
+
+        // Se a descrição FOI salva, a observação deve ser padrão, a menos que o status seja Entregue.
+        if (currentData && currentData.description && !currentData.description.startsWith('Peça simulada')) {
+            observations = currentStatus === 'Entregue' ? 'Entrega registrada.' : 'Recebido para processamento.';
+        }
+
+
+        const washTypesDisplay = currentWashTypes.map(type =>
+            `<span class="inline-block bg-indigo-100 text-indigo-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded">${type}</span>`
+        ).join('');
+
+        return `
+            <div class="bg-white p-6 rounded-xl shadow-lg border border-indigo-100 mt-6 space-y-4 receipt-content">
+
+                <div class="receipt-header" style="display:none;">
+                    <h1>LaveSmart Lavanderia</h1>
+                    <p class="text-xs text-gray-500">Recibo de Entrada - Lacre #${sealId}</p>
+                </div>
+
+                <div class="border-b pb-2 mb-4">
+                    <h3 class="text-xl font-bold text-indigo-700">Detalhes do Lacre: ${sealId}</h3>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                    <div class="md:col-span-2 space-y-2 text-sm">
+                        <p><span class="font-medium text-gray-600">Descrição da Peça:</span> ${description}</p>
+                        <p class="font-medium text-gray-600">Tipos de Lavagem:</p>
+                        <div class="flex flex-wrap">${washTypesDisplay}</div>
+                        <p class="text-indigo-600"><span class='font-medium'>Data de Registro:</span> 15/10/2025 às 10:00:00</p>
+                        <p class="text-gray-600"><span class='font-medium'>Data/Previsão de Entrega:</span> ${deliveryDate}</p>
+                        <p class="break-words"><span class="font-medium text-gray-600">Observações:</span> ${observations}</p>
+                        <p class="text-xs text-gray-400 mt-4 pt-2 border-t border-dashed">
+                            Para rastrear: Use o Lacre ID ${sealId}.
+                        </p>
+                    </div>
+
+                    <div class="md:col-span-1">
+                        <div class="flex items-center justify-center w-full h-36 rounded-lg shadow-md ${STATUS_MAP[currentStatus].class}">
+                            <span class="text-xl font-bold">${currentStatus}</span>
+                        </div>
+                        <p class="text-sm font-semibold mt-2 text-center text-gray-700">${description}</p>
+                    </div>
+                </div>
+                <hr class="border-gray-100"/>
+
+                <div id="update-form-area" class="p-4 bg-indigo-50 rounded-lg space-y-4">
+                    <h4 class="text-lg font-semibold text-indigo-800">Atualizar Informações da Peça</h4>
+
+                    <div class="space-y-1">
+                        <label class="block text-sm font-medium text-gray-700">Status Atual da Lavagem:</label>
+                        ${getStatusDropdown(currentStatus, 'editable-status-select')}
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="block text-sm font-medium text-gray-700">Tipos de Lavagem (Máx. 10):</label>
+                        <div class="border border-gray-300 rounded-xl p-3 bg-white">
+                            <label for="wash-search-input-update" class="block text-xs font-medium text-gray-500 mb-2">
+                                <i data-lucide="search" class="w-4 h-4 mr-1 inline-block"></i> Pesquisar e Adicionar Processos:
+                            </label>
+
+                            <div class="relative">
+                                <input
+                                        id="wash-search-input-update"
+                                        type="text"
+                                        placeholder="Ex: STONAGEM, LASER, AMACIADO..."
+                                        class="w-full pl-3 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 text-sm"
+                                        onfocus="this.value='';"
+                                        oninput="filterWashTypes(this.value, 'update')"
+                                />
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                    <i data-lucide="search" class="w-5 h-5 text-gray-400"></i>
+                                </div>
+
+                                <div id="selected-wash-tags-update" class="flex flex-wrap gap-2 mt-2 min-h-[30px] p-1 border border-dashed border-gray-200 rounded-lg">
+                                    <span class="text-xs text-gray-400">Nenhum processo selecionado.</span>
+                                </div>
+
+                                <div id="wash-search-results-update" class="hidden absolute z-10 w-full bg-white border border-gray-300 mt-1 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                </div>
+                            </div>
+
+                            <input type="hidden" id="selected-wash-types-hidden-update" required value="" />
+
+                        </div>
+                        </div>
+
+                    <button
+                        id="update-all-btn"
+                        data-seal-id="${sealId}"
+                        class="w-full flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-xl shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-150 ease-in-out"
+                    >
+                        <i data-lucide="save" class="w-4 h-4 mr-2"></i> Salvar Alterações
+                    </button>
+
+                    <button
+                        id="print-receipt-btn"
+                        data-seal-id="${sealId}"
+                        class="w-full flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-xl shadow-sm text-white bg-indigo-500 hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out mt-2"
+                    >
+                        <i data-lucide="printer" class="w-4 h-4 mr-2"></i> Imprimir (Salvar PDF)
+                    </button>
+                </div>
+                </div>
+        `;
+    };
+
+    // --- FUNÇÕES AUXILIARES DE LAYOUT ---
+
+    const getStatusDropdown = (currentStatus, id) => {
+        let options = '';
+        for (const status in STATUS_MAP) {
+            const selected = status === currentStatus ? 'selected' : '';
+            options += `<option value="${status}" ${selected}>${STATUS_MAP[status].text}</option>`;
+        }
+        return `<select id="${id}" class="block w-full rounded-xl border border-gray-300 bg-white py-2 px-3 text-sm focus:ring-indigo-500 focus:border-indigo-500 transition duration-150">${options}</select>`;
+    };
+
+    const getWashTypeSelectorsForUpdate = (currentWashTypes) => {
+        let html = '';
+        currentWashTypes = Array.isArray(currentWashTypes) ? currentWashTypes : [WASH_TYPES[0]];
+        const numSelectors = 10;
+
+        for (let i = 0; i < numSelectors; i++) {
+            const selectedType = currentWashTypes[i] || WASH_TYPES[0];
+            let options = '';
+            WASH_TYPES.forEach(type => {
+                const selected = type === selectedType ? 'selected' : '';
+                options += `<option value="${type}" ${selected}>${type}</option>`;
+            });
+
+            const label = (i === 0) ? `Tipo de Lavagem Principal:` : `Tipo de Lavagem Adicional ${i}:`;
+
+            html += `
+                <div class="space-y-1 ${i > 0 ? 'mt-2' : ''}">
+                    <label class="block text-xs font-medium text-gray-500">${label}</label>
+                    <select
+                        id="editable-wash-type-select-${i}"
+                        data-type-index="${i}"
+                        class="wash-type-selector-update block w-full rounded-xl border border-gray-300 bg-white py-2 px-3 text-sm focus:ring-indigo-500 focus:border-indigo-500 transition duration-150"
+                    >
+                        ${options}
+                    </select>
+                </div>
+            `;
+        }
+
+        return `
+            <div class="space-y-2 max-h-60 overflow-y-auto pr-2 border-l-2 pl-2 border-gray-200">
+                <p class="text-xs text-gray-500 font-semibold border-b pb-1">Escolha até 10 processos:</p>
+                ${html}
+            </div>
+        `;
+    };
+
+    const attachUpdateListener = (sealId) => {
+        const updateBtn = document.getElementById('update-all-btn');
+        if (updateBtn) {
+            updateBtn.addEventListener('click', () => {
+                simulateUpdate(sealId);
+            });
+        }
+        const printBtn = document.getElementById('print-receipt-btn');
+        if (printBtn) {
+            printBtn.addEventListener('click', () => {
+                printReceipt(sealId);
+            });
+        }
+    };
+
+    const printReceipt = (sealId) => {
+        window.print();
+        StatusMessage(`Recibo para o Lacre ${sealId} enviado para impressão/PDF.`, 'info');
+    };
+
+    const getSealDetailsHTMLForRegister = (sealId) => {
+         const data = sealDataCache[sealId] || {};
+         const currentStatus = data.status || 'Pendente';
+         const currentWashTypes = data.washType || ['Selecione o Tipo...'];
+         const description = data.description || 'Peça de roupa padrão, não especificada.';
+
+         const washTypesDisplay = currentWashTypes.map(type =>
+             `<span class="inline-block bg-indigo-100 text-indigo-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded">${type}</span>`
+         ).join('');
+
+         return `
+             <div class="receipt-header" style="display:none;">
+                 <h1>LaveSmart Lavanderia</h1>
+                 <p class="text-xs text-gray-500">Recibo de Entrada - Lacre #${sealId}</p>
+             </div>
+
+             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                 <div class="md:col-span-1">
+                     <div class="flex items-center justify-center w-full h-36 rounded-lg shadow-md ${STATUS_MAP[currentStatus].class}">
+                         <span class="text-xl font-bold">${currentStatus}</span>
+                     </div>
+                     <p class="text-sm font-semibold mt-2 text-center text-gray-700">${description}</p>
+                 </div>
+                 <div class="md:col-span-2 space-y-2 text-sm">
+                     <p><span class="font-medium text-gray-600">Descrição da Peça:</span> ${description}</p>
+                     <p class="font-medium text-gray-600">Tipos de Lavagem:</p>
+                     <div class="flex flex-wrap">${washTypesDisplay}</div>
+                     <p class="text-indigo-600"><span class='font-medium'>Data de Registro:</span> ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</p>
+                     <p class="text-gray-600"><span class='font-medium'>Status Inicial:</span> ${STATUS_MAP[currentStatus].text}</p>
+                     <p class="break-words"><span class="font-medium text-gray-600">Observações:</span> Recebido e pronto para processamento.</p>
+                     <p class="text-xs text-gray-400 mt-4 pt-2 border-t border-dashed">
+                         Guarde este número para rastrear o serviço.
+                     </p>
+                 </div>
+             </div>
+         `;
+    };
+
+    const renderInitialRegistrationOptions = () => {
+         const statusContainer = document.getElementById('initial-status-dropdown-container');
+         if (statusContainer) {
+             statusContainer.innerHTML = getStatusDropdown('Pendente', 'reg-status-select');
+         }
+
+         // Reinicia o componente de busca/seleção para o contexto 'register'
+         activeSelectedWashTypes = [];
+         updateSelectedTags('register');
+         renderWashList('', 'register');
+
+         const printBtnRegister = document.getElementById('print-receipt-btn-register');
+         if (printBtnRegister) {
+             printBtnRegister.addEventListener('click', () => {
+                 const sealId = printBtnRegister.getAttribute('data-seal-id');
+                 if(sealId) printReceipt(sealId);
+             });
+         }
+         lucide.createIcons();
+    };
+
+    const renderWashList = (filter, context) => {
+        const resultsContainer = document.getElementById(`wash-search-results-${context}`);
+        if (!resultsContainer) return;
+
+        let html = '';
+        const cleanFilter = filter.toUpperCase().trim();
+
+        const filteredOptions = WASH_TYPES.filter(type =>
+            type !== WASH_TYPES[0] && type.toUpperCase().includes(cleanFilter)
+        ).slice(0, 10);
+
+        if (filteredOptions.length === 0 && cleanFilter !== '') {
+            html = '<div class="p-3 text-sm text-gray-500">Nenhum resultado encontrado.</div>';
+        } else {
+            filteredOptions.forEach(type => {
+                const isDisabled = activeSelectedWashTypes.includes(type);
+                const classes = isDisabled ? 'bg-indigo-100 text-indigo-700 cursor-pointer font-medium' : 'hover:bg-indigo-50 cursor-pointer';
+
+                html += `
+                    <div class="p-3 text-sm ${classes}" onclick="selectWashType('${type}', '${context}')">
+                        ${type} ${activeSelectedWashTypes.includes(type) ? '✅' : ''}
+                    </div>
+                `;
+            });
+        }
+
+        resultsContainer.innerHTML = html;
+        if (filteredOptions.length > 0 && cleanFilter !== '') {
+            resultsContainer.classList.remove('hidden');
+        } else {
+            resultsContainer.classList.add('hidden');
+        }
+    };
+
+    const selectWashType = (type, context) => {
+        const index = activeSelectedWashTypes.indexOf(type);
+
+        if (index === -1) {
+            if (activeSelectedWashTypes.length < 10) {
+                activeSelectedWashTypes.push(type);
+            } else {
+                StatusMessage("Máximo de 10 Tipos de Lavagem atingido.", 'error');
+            }
+        } else {
+            activeSelectedWashTypes.splice(index, 1);
+        }
+
+        updateSelectedTags(context);
+
+        const inputId = context === 'register' ? 'wash-search-input' : 'wash-search-input-update';
+        const searchInput = document.getElementById(inputId);
+        if(searchInput) {
+            renderWashList(searchInput.value, context);
+        }
+    };
+
+    const updateSelectedTags = (context) => {
+        const tagsContainer = document.getElementById(`selected-wash-tags-${context}`);
+        const hiddenInput = document.getElementById(`selected-wash-types-hidden-${context}`);
+
+        if (!tagsContainer || !hiddenInput) return;
+
+        if (activeSelectedWashTypes.length === 0) {
+            tagsContainer.innerHTML = '<span class="text-xs text-gray-400">Nenhum processo selecionado.</span>';
+            hiddenInput.value = '';
+            hiddenInput.removeAttribute('required');
+            return;
+        }
+
+        hiddenInput.setAttribute('required', 'required');
+
+        const tagHtml = activeSelectedWashTypes.map(type => `
+            <span class="inline-flex items-center text-xs font-medium bg-indigo-200 text-indigo-900 px-2.5 py-0.5 rounded-full">
+                ${type}
+                <i data-lucide="x" class="w-3 h-3 ml-1 cursor-pointer hover:text-red-600" onclick="selectWashType('${type}', '${context}')"></i>
+            </span>
+        `).join('');
+
+        tagsContainer.innerHTML = tagHtml;
+        hiddenInput.value = activeSelectedWashTypes.join(',');
+        lucide.createIcons();
+    };
+
+    const filterWashTypes = (value, context) => {
+        renderWashList(value, context);
+    };
+
+    document.addEventListener('click', (event) => {
+        const contexts = ['register', 'update'];
+        contexts.forEach(context => {
+            const resultsContainer = document.getElementById(`wash-search-results-${context}`);
+            const searchInput = document.getElementById(context === 'register' ? 'wash-search-input' : 'wash-search-input-update');
+            const tagsContainer = document.getElementById(`selected-wash-tags-${context}`);
+
+            if (resultsContainer && searchInput && tagsContainer) {
+                const isClickInside = resultsContainer.contains(event.target) || searchInput.contains(event.target) || tagsContainer.contains(event.target);
+
+                if (!isClickInside) {
+                    resultsContainer.classList.add('hidden');
+                }
+            }
+        });
+    });
+
+
+    // =================================================================
+    // INICIALIZAÇÃO E LISTENERS GERAIS
+    // =================================================================
+
+    window.onload = function() {
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        const historyTab = document.getElementById('tab-history');
+        const registerTab = document.getElementById('tab-register');
+        const historyContent = document.getElementById('content-history');
+        const registerContent = document.getElementById('content-register');
+
+        if (historyTab && registerTab) {
+            historyTab.onclick = () => {
+                historyTab.classList.add('active');
+                registerTab.classList.remove('active');
+                historyContent.setAttribute('aria-hidden', 'false');
+                registerContent.setAttribute('aria-hidden', 'true');
+                historyContent.style.display = 'block';
+                registerContent.style.display = 'none';
+                lucide.createIcons();
+                //  Ação de limpeza: Esconde a lista e os detalhes ao trocar de aba
+                document.getElementById('seal-list-area').classList.add('hidden');
+                document.getElementById('seal-details-area').innerHTML = '';
+            };
+
+            registerTab.onclick = () => {
+                registerTab.classList.add('active');
+                historyTab.classList.remove('active');
+                registerContent.setAttribute('aria-hidden', 'false');
+                historyContent.setAttribute('aria-hidden', 'true');
+                registerContent.style.display = 'block';
+                historyContent.style.display = 'none';
+                lucide.createIcons();
+
+                document.getElementById('registered-seal-details-area').classList.add('hidden');
+            };
+        }
+
+        const searchBtn = document.getElementById('search-seal-btn');
+        const sealInput = document.getElementById('seal-input');
+
+        if (searchBtn && sealInput) {
+            searchBtn.addEventListener('click', handleSearch);
+            sealInput.addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleSearch();
+                }
+            });
+        }
+
+        const registerForm = document.getElementById('register-seal-form');
+        if (registerForm) {
+            registerForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                handleRegister();
+            });
+        }
+
+        // Listener para o formulário de cadastro de usuário
+        const registrationForm = document.getElementById('registrationForm');
+        if (registrationForm) {
+            registrationForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                showAppForLogin('Cadastro');
+            });
+        }
+
+
+        if(document.getElementById('appView').classList.contains('hidden') === false) {
+             renderInitialRegistrationOptions();
+        }
+    };
+</script>
+</body>
+</html>
