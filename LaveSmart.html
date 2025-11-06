@@ -12,7 +12,7 @@
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f9fafb;
-            /* 🟢 Garante que o corpo do HTML preencha a altura mínima */
+            /* Garante que o corpo do HTML preencha a altura mínima */
             min-height: 100vh;
         }
         #appView {
@@ -69,7 +69,7 @@
         }
 
 
-        /* 🚨 ESTILOS PARA IMPRESSÃO (RECIBO LIMPO) 🚨 */
+        /*  ESTILOS PARA IMPRESSÃO (RECIBO LIMPO)  */
         @media print {
             body {
                 background-color: white !important;
@@ -152,21 +152,21 @@
             Entrar na Sua Conta
         </h1>
         <p class="text-center text-gray-500 mb-8">
-            Digite seu **nome de usuário** e senha para acessar sua conta.
+            Digite seu nome de usuário e senha.
         </p>
 
         <form id="loginForm" onsubmit="event.preventDefault(); showApp('Login');">
 
             <div class="mb-5">
                 <label for="login-username" class="block text-sm font-medium text-gray-700 mb-2">Nome de Usuário</label>
-                <input type="text" id="login-username" name="username" placeholder="Seu nome de usuário (Tente 'admin')" required
+                <input type="text" id="login-username" name="username" placeholder="Seu nome de usuário " required
                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 shadow-sm"
                        aria-label="Nome de Usuário de Login">
             </div>
 
             <div class="mb-6">
                 <label for="login-password" class="block text-sm font-medium text-gray-700 mb-2">Senha</label>
-                <input type="password" id="login-password" name="password" placeholder="Sua senha (Tente '123456')" required
+                <input type="password" id="login-password" name="password" placeholder="Sua senha " required
                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 shadow-sm"
                        aria-label="Senha de Login">
             </div>
@@ -246,9 +246,9 @@
         <h1 class="text-4xl font-extrabold text-indigo-600 mb-2">
             LaveSmart
         </h1>
-        <p class="text-gray-600">Interface de registro e rastreamento de peças.</p>
+        <p class="text-gray-600"> Registro e rastreamento de etiquetas.</p>
         <button onclick="goBackToAuth()" class="text-sm text-gray-500 hover:text-indigo-600 mt-2 flex items-center justify-center mx-auto">
-            <i data-lucide="log-out" class="w-4 h-4 mr-1"></i> Sair (Voltar ao Login)
+            <i data-lucide="log-out" class="w-4 h-4 mr-1"></i> Sair
         </button>
     </header>
 
@@ -260,7 +260,7 @@
                 <i data-lucide="save" class="w-5 h-5 mr-1"></i> Cadastrar Lacre
             </button>
             <button id="tab-history" class="nav-item" aria-controls="content-history">
-                <i data-lucide="search" class="w-5 h-5 mr-1"></i> Buscar Número do Lacre
+                <i data-lucide="search" class="w-5 h-5 mr-1"></i> Buscar
             </button>
         </div>
     </nav>
@@ -283,7 +283,7 @@
                         <input
                                 id="register-seal-input"
                                 type="text"
-                                placeholder="Ex: 99887 (Número único de identificação)"
+                                placeholder="Número de identificação"
                                 required
                                 class="w-full border border-gray-300 rounded-xl p-3 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150"
                         />
@@ -293,7 +293,7 @@
                         <input
                                 id="register-desc-input"
                                 type="text"
-                                placeholder="Ex: Terno cinza, novo, sem manchas"
+                                placeholder="Tipo de peça"
                                 required
                                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 shadow-sm"
                         />
@@ -312,7 +312,7 @@
 
                             <div class="border border-gray-300 rounded-xl p-3 bg-white">
                                 <label for="wash-search-input" class="block text-xs font-medium text-gray-500 mb-2">
-                                    <i data-lucide="search" class="w-4 h-4 mr-1 inline-block"></i> Pesquisar e Adicionar Processos:
+                                    <i data-lucide="search" class="w-4 h-4 mr-1 inline-block"></i> Adicionar Processos:
                                 </label>
 
                                 <div class="relative">
@@ -346,10 +346,10 @@
                             id="register-seal-btn"
                             class="mt-4 w-full flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-xl shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-150 ease-in-out"
                     >
-                        <i data-lucide="save" class="w-5 h-5 mr-2"></i> Confirmar Cadastro e Iniciar Rastreio
+                        <i data-lucide="save" class="w-5 h-5 mr-2"></i> Confirmar Cadastro
                     </button>
                     <p class="text-xs text-gray-400 text-center pt-2">
-                        *O lacre será salvo de forma persistente (LocalStorage).
+                        LaveSmart
                     </p>
                 </form>
 
@@ -365,7 +365,7 @@
                             data-seal-id=""
                             class="w-full flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-xl shadow-sm text-white bg-indigo-500 hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out mt-4"
                     >
-                        <i data-lucide="printer" class="w-4 h-4 mr-2"></i> Imprimir (Salvar PDF)
+                        <i data-lucide="printer" class="w-4 h-4 mr-2"></i> Salvar
                     </button>
                 </div>
 
@@ -375,18 +375,18 @@
         <div id="content-history" class="tab-content-panel" aria-hidden="true">
             <div class="space-y-6">
                 <h2 class="text-2xl font-semibold text-gray-800 flex items-center">
-                    <i data-lucide="search" class="w-6 h-6 mr-2 text-indigo-500"></i> Buscar Peça para Atualização
+                    <i data-lucide="search" class="w-6 h-6 mr-2 text-indigo-500"></i> Buscar Lacre
                 </h2>
 
                 <div id="search-area" class="p-6 bg-white rounded-xl shadow-lg border border-gray-100">
                     <label for="seal-input" class="block text-sm font-medium text-gray-700 mb-3">
-                        Digite o **Número do Lacre** para ver e atualizar o status:
+                        Digite o Número do Lacre:
                     </label>
                     <div class="flex items-stretch space-x-3">
                         <input
                                 id="seal-input"
                                 type="text"
-                                placeholder="Tente 11111, 22222, 33333 ou o lacre cadastrado"
+                                placeholder="Número de registro"
                                 value=""
                                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 shadow-sm"
                         />
@@ -418,7 +418,7 @@
 
                 <div id="seal-list-area" class="mt-6 hidden">
                     <h3 class="text-xl font-bold text-indigo-700 mb-4 flex items-center">
-                        <i data-lucide="archive" class="w-5 h-5 mr-2"></i> Lista Completa de Lacres Cadastrados
+                        <i data-lucide="archive" class="w-5 h-5 mr-2"></i> Lista de Lacres Cadastrados
                     </h3>
                     <div id="seal-list-content" class="bg-white rounded-xl shadow-lg border border-gray-100 divide-y divide-gray-100">
                     </div>
@@ -435,6 +435,7 @@
     // =================================================================
 
     const STATUS_MAP = {
+        'Novo': { class: 'badge-gray', text: 'Novo' },
         'Pendente': { class: 'badge-gray', text: 'Pendente' },
         'Lavando': { class: 'badge-yellow', text: 'Lavando' },
         'Pronto': { class: 'badge-green', text: 'Pronto para retirada' },
@@ -528,11 +529,11 @@
 
         if (view === 'register') {
             loginView.classList.add('hidden');
-            //  CORREÇÃO: Apenas remove a classe hidden
+            // CORREÇÃO: Apenas remove a classe hidden
             registerView.classList.remove('hidden');
             title.textContent = 'Painel de Cadastro';
         } else {
-            //  CORREÇÃO: Apenas adiciona a classe hidden
+            // CORREÇÃO: Apenas adiciona a classe hidden
             registerView.classList.add('hidden');
             loginView.classList.remove('hidden');
             title.textContent = 'Painel de Login';
@@ -546,12 +547,12 @@
      * Lida com o Login, usando o cache de usuários (persistente) para validação.
      */
     function showApp(actionType) {
-        //  Normaliza o nome de usuário (remove espaços e converte para minúsculas)
+        // Normaliza o nome de usuário (remove espaços e converte para minúsculas)
         const usernameInput = document.getElementById('login-username').value.trim().toLowerCase();
         const originalUsername = document.getElementById('login-username').value;
         const passwordInput = document.getElementById('login-password').value;
 
-        //  Procura as credenciais no cache persistente (pelo nome normalizado)
+        // Procura as credenciais no cache persistente (pelo nome normalizado)
         if (userCache.hasOwnProperty(usernameInput)) {
             if (userCache[usernameInput] === passwordInput) {
                 // SUCESSO: CREDENCIAIS CORRETAS
@@ -559,7 +560,7 @@
                 const appView = document.getElementById('appView');
                 const title = document.querySelector('title');
 
-                // 💡 CORREÇÃO: Garante o display imediato com style
+                // CORREÇÃO: Garante o display imediato com style
                 authView.style.display = 'none';
                 appView.style.display = 'block';
 
@@ -591,7 +592,7 @@
          const username = document.getElementById('reg-username').value.trim();
          const password = document.getElementById('reg-password').value;
 
-         // 🟢 1. Salva o usuário no cache com a chave em MINÚSCULAS para facilitar o login
+         // 1. Salva o usuário no cache com a chave em MINÚSCULAS para facilitar o login
          userCache[username.toLowerCase()] = password;
          saveCache('lavesmart_users', userCache);
 
@@ -610,7 +611,7 @@
         const appView = document.getElementById('appView');
         const title = document.querySelector('title');
 
-        // 💡 CORREÇÃO: Garante o display imediato com style
+        // CORREÇÃO: Garante o display imediato com style
         appView.style.display = 'none';
         authView.style.display = 'flex'; // 'authView' é um container flex
 
@@ -674,7 +675,7 @@
         document.getElementById('print-receipt-btn-register').setAttribute('data-seal-id', newSealId);
 
 
-        StatusMessage(`Lacre ID ${newSealId} registrado com sucesso! (Salvo permanentemente).`, 'success');
+        StatusMessage(`Lacre ID ${newSealId} registrado!`, 'Sucesso');
         lucide.createIcons();
     };
 
@@ -691,7 +692,7 @@
         const sealId = sealInput.value.trim();
 
         if (!sealId || sealId.length < 5) {
-            StatusMessage("Por favor, digite um número de lacre válido (ex: 11111) para buscar.", 'error');
+            StatusMessage("Por favor, digite um número de lacre válido.", 'error');
             detailsArea.innerHTML = '';
             return;
         }
@@ -735,7 +736,7 @@
             detailsArea.innerHTML = getSealDetailsHTML(sealId, status, initialWashType);
             StatusMessage(`Lacre ID ${sealId} encontrado! Status: ${STATUS_MAP[status].text}.`, 'success');
 
-            //  Inicia o Multi-Select com os dados do lacre buscado
+            // Inicia o Multi-Select com os dados do lacre buscado
             activeSelectedWashTypes = [...(sealDataCache[sealId].washType || [])];
             updateSelectedTags('update');
 
@@ -764,7 +765,7 @@
 
         saveCache('lavesmart_seals', sealDataCache);
 
-        StatusMessage(`Lacre ${sealId} atualizado com sucesso! (Salvo permanentemente). Status: ${STATUS_MAP[newStatus].text}.`, 'success');
+        StatusMessage(`Lacre ${sealId} atualizado com sucesso!. Status: ${STATUS_MAP[newStatus].text}.`, 'success');
 
         document.getElementById('seal-details-area').innerHTML = getSealDetailsHTML(sealId, newStatus, newWashTypes);
         lucide.createIcons();
@@ -777,7 +778,7 @@
     };
 
 
-    //  FUNÇÃO NOVO: RENDERIZA A LISTA COMPLETA 
+    // FUNÇÃO NOVO: RENDERIZA A LISTA COMPLETA 🟢
     const renderSealList = () => {
         const listArea = document.getElementById('seal-list-area');
         const listContent = document.getElementById('seal-list-content');
@@ -791,7 +792,7 @@
             listContent.innerHTML = `
                 <div class="p-6 text-center text-gray-500">
                     <i data-lucide="folder-x" class="w-8 h-8 mx-auto mb-2 text-gray-400"></i>
-                    <p class="font-medium">Nenhum lacre cadastrado na memória persistente.</p>
+                    <p class="font-medium">Nenhum lacre cadastrado.</p>
                     <p class="text-sm">Cadastre um lacre na aba ao lado.</p>
                 </div>
             `;
@@ -826,11 +827,12 @@
         listContent.innerHTML = html;
         listArea.classList.remove('hidden');
         lucide.createIcons();
-        StatusMessage(`Foram encontrados ${sealIds.length} lacres salvos permanentemente.`, 'info');
+        StatusMessage(`Foram encontrados ${sealIds.length} lacres salvos.`, 'info');
     };
+    // RENDERIZA A LISTA COMPLETA
 
 
-    //  FUNÇÃO CORRIGIDA/MODIFICADA: getSealDetailsHTML 
+    //  FUNÇÃO getSealDetailsHTML
     const getSealDetailsHTML = (sealId, status, initialWashType) => {
 
         const currentWashTypes = sealDataCache[sealId]?.washType || (Array.isArray(initialWashType) ? initialWashType : [initialWashType]);
@@ -838,7 +840,7 @@
         const currentData = sealDataCache[sealId];
 
         // CORREÇÃO: Pega a descrição salva ou uma descrição simulada/padrão.
-        let description = currentData?.description || 'Peça de roupa padrão, não especificada.';
+        let description = currentData?.description || 'Peça de roupa padrão.';
         let observations = 'Recebido na lavanderia.';
         let deliveryDate = 'Previsão: 20/10/2025';
 
@@ -916,7 +918,7 @@
                 <hr class="border-gray-100"/>
 
                 <div id="update-form-area" class="p-4 bg-indigo-50 rounded-lg space-y-4">
-                    <h4 class="text-lg font-semibold text-indigo-800">Atualizar Informações da Peça</h4>
+                    <h4 class="text-lg font-semibold text-indigo-800">Atualizar Informações</h4>
 
                     <div class="space-y-1">
                         <label class="block text-sm font-medium text-gray-700">Status Atual da Lavagem:</label>
@@ -1231,7 +1233,7 @@
                 historyContent.style.display = 'block';
                 registerContent.style.display = 'none';
                 lucide.createIcons();
-                //  Ação de limpeza: Esconde a lista e os detalhes ao trocar de aba
+                // Ação de limpeza: Esconde a lista e os detalhes ao trocar de aba
                 document.getElementById('seal-list-area').classList.add('hidden');
                 document.getElementById('seal-details-area').innerHTML = '';
             };
